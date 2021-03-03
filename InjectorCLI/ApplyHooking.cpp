@@ -7,15 +7,33 @@
 #include "RemoteHook.h"
 
 #define STR(x) #x
-#define HOOK(name) { \
-    hdd->d##name = (t_##name)DetourCreateRemote(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, true, &hdd->name##BackupSize); \
-    if (hdd->d##name == nullptr) { return false; } }
-#define HOOK_NATIVE(name) { \
-    hdd->d##name = (t_##name)DetourCreateRemoteNative(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, true, &hdd->name##BackupSize); \
-    if (hdd->d##name == nullptr) { return false; } }
-#define HOOK_NATIVE_NOTRAMP(name) DetourCreateRemoteNative(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, false, &hdd->name##BackupSize)
-#define FREE_HOOK(name) FreeMemory(hProcess, (void*)hdd->d##name); hdd->d##name = 0
-#define RESTORE_JMP(name) RestoreJumper(hProcess, (void*)_##name, (void*)hdd->d##name, hdd->name##BackupSize)
+
+#define HOOK(name) \
+    { \
+        hdd->d##name = (t_##name)DetourCreateRemote(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, true, &hdd->name##BackupSize); \
+        if (hdd->d##name == nullptr) \
+        { \
+            return false; \
+        } \
+    }
+
+#define HOOK_NATIVE(name) \
+    { \
+        hdd->d##name = (t_##name)DetourCreateRemoteNative(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, true, &hdd->name##BackupSize); \
+        if (hdd->d##name == nullptr) \
+        { \
+            return false; \
+        } \
+    }
+
+#define HOOK_NATIVE_NOTRAMP(name) \
+    DetourCreateRemoteNative(hProcess, "" STR(name) "", (void*)_##name, Hooked##name, false, &hdd->name##BackupSize)
+
+#define FREE_HOOK(name) \
+    FreeMemory(hProcess, (void*)hdd->d##name); hdd->d##name = 0
+
+#define RESTORE_JMP(name) \
+    RestoreJumper(hProcess, (void*)_##name, (void*)hdd->d##name, hdd->name##BackupSize)
 
 extern scl::Logger g_log;
 
@@ -70,7 +88,12 @@ t_NtQuerySystemTime _NtQuerySystemTime = 0;
 t_NtQueryPerformanceCounter _NtQueryPerformanceCounter = 0;
 t_NtResumeThread _NtResumeThread = 0;
 
-bool ApplyNtdllHook(HOOK_DLL_DATA * hdd, HANDLE hProcess, BYTE * dllMemory, DWORD_PTR imageBase)
+//----------------------------------------------------------------------------------
+bool ApplyNtdllHook(
+    HOOK_DLL_DATA *hdd,
+    HANDLE hProcess,
+    BYTE *dllMemory,
+    DWORD_PTR imageBase)
 {
     hNtdll = GetModuleHandleW(L"ntdll.dll");
 
@@ -80,45 +103,45 @@ bool ApplyNtdllHook(HOOK_DLL_DATA * hdd, HANDLE hProcess, BYTE * dllMemory, DWOR
     HookNative = hdd->HookNative;
 #endif
 
-    void * HookedNtSetInformationThread = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetInformationThread") + imageBase);
-    void * HookedNtQuerySystemInformation = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQuerySystemInformation") + imageBase);
-    void * HookedNtQueryInformationProcess = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryInformationProcess") + imageBase);
-    void * HookedNtSetInformationProcess = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetInformationProcess") + imageBase);
-    void * HookedNtQueryObject = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryObject") + imageBase);
-    void * HookedNtYieldExecution = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtYieldExecution") + imageBase);
-    void * HookedNtGetContextThread = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtGetContextThread") + imageBase);
-    void * HookedNtSetContextThread = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetContextThread") + imageBase);
-    void * HookedKiUserExceptionDispatcher = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedKiUserExceptionDispatcher") + imageBase);
-    void * HookedNtContinue = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtContinue") + imageBase);
-    void * HookedNtClose = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtClose") + imageBase);
-    void * HookedNtDuplicateObject = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtDuplicateObject") + imageBase);
-    void * HookedNtSetDebugFilterState = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetDebugFilterState") + imageBase);
-    void * HookedNtCreateThread = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtCreateThread") + imageBase);
-    void * HookedNtCreateThreadEx = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtCreateThreadEx") + imageBase);
-    void * HookedNtQuerySystemTime = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQuerySystemTime") + imageBase);
-    void * HookedNtQueryPerformanceCounter = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryPerformanceCounter") + imageBase);
-    void * HookedNtResumeThread = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtResumeThread") + imageBase);
+    void * HookedNtSetInformationThread         = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetInformationThread") + imageBase);
+    void * HookedNtQuerySystemInformation       = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQuerySystemInformation") + imageBase);
+    void * HookedNtQueryInformationProcess      = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryInformationProcess") + imageBase);
+    void * HookedNtSetInformationProcess        = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetInformationProcess") + imageBase);
+    void * HookedNtQueryObject                  = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryObject") + imageBase);
+    void * HookedNtYieldExecution               = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtYieldExecution") + imageBase);
+    void * HookedNtGetContextThread             = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtGetContextThread") + imageBase);
+    void * HookedNtSetContextThread             = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetContextThread") + imageBase);
+    void * HookedKiUserExceptionDispatcher      = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedKiUserExceptionDispatcher") + imageBase);
+    void * HookedNtContinue                     = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtContinue") + imageBase);
+    void * HookedNtClose                        = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtClose") + imageBase);
+    void * HookedNtDuplicateObject              = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtDuplicateObject") + imageBase);
+    void * HookedNtSetDebugFilterState          = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtSetDebugFilterState") + imageBase);
+    void * HookedNtCreateThread                 = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtCreateThread") + imageBase);
+    void * HookedNtCreateThreadEx               = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtCreateThreadEx") + imageBase);
+    void * HookedNtQuerySystemTime              = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQuerySystemTime") + imageBase);
+    void * HookedNtQueryPerformanceCounter      = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtQueryPerformanceCounter") + imageBase);
+    void * HookedNtResumeThread                 = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNtResumeThread") + imageBase);
 
-    HookedNativeCallInternal = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNativeCallInternal") + imageBase);
+    HookedNativeCallInternal                    = (void *)(GetDllFunctionAddressRVA(dllMemory, "HookedNativeCallInternal") + imageBase);
 
-    _NtSetInformationThread = (t_NtSetInformationThread)GetProcAddress(hNtdll, "NtSetInformationThread");
-    _NtQuerySystemInformation = (t_NtQuerySystemInformation)GetProcAddress(hNtdll, "NtQuerySystemInformation");
-    _NtQueryInformationProcess = (t_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
-    _NtSetInformationProcess = (t_NtSetInformationProcess)GetProcAddress(hNtdll, "NtSetInformationProcess");
-    _NtQueryObject = (t_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
-    _NtYieldExecution = (t_NtYieldExecution)GetProcAddress(hNtdll, "NtYieldExecution");
-    _NtGetContextThread = (t_NtGetContextThread)GetProcAddress(hNtdll, "NtGetContextThread");
-    _NtSetContextThread = (t_NtSetContextThread)GetProcAddress(hNtdll, "NtSetContextThread");
-    _KiUserExceptionDispatcher = (t_KiUserExceptionDispatcher)GetProcAddress(hNtdll, "KiUserExceptionDispatcher");
-    _NtContinue = (t_NtContinue)GetProcAddress(hNtdll, "NtContinue");
-    _NtClose = (t_NtClose)GetProcAddress(hNtdll, "NtClose");
-    _NtDuplicateObject = (t_NtDuplicateObject)GetProcAddress(hNtdll, "NtDuplicateObject");
-    _NtSetDebugFilterState = (t_NtSetDebugFilterState)GetProcAddress(hNtdll, "NtSetDebugFilterState");
-    _NtCreateThread = (t_NtCreateThread)GetProcAddress(hNtdll, "NtCreateThread");
-    _NtCreateThreadEx = (t_NtCreateThreadEx)GetProcAddress(hNtdll, "NtCreateThreadEx");
-    _NtQuerySystemTime = (t_NtQuerySystemTime)GetProcAddress(hNtdll, "NtQuerySystemTime");
-    _NtQueryPerformanceCounter = (t_NtQueryPerformanceCounter)GetProcAddress(hNtdll, "NtQueryPerformanceCounter");
-    _NtResumeThread = (t_NtResumeThread)GetProcAddress(hNtdll, "NtResumeThread");
+    _NtSetInformationThread                     = (t_NtSetInformationThread)GetProcAddress(hNtdll, "NtSetInformationThread");
+    _NtQuerySystemInformation                   = (t_NtQuerySystemInformation)GetProcAddress(hNtdll, "NtQuerySystemInformation");
+    _NtQueryInformationProcess                  = (t_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
+    _NtSetInformationProcess                    = (t_NtSetInformationProcess)GetProcAddress(hNtdll, "NtSetInformationProcess");
+    _NtQueryObject                              = (t_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
+    _NtYieldExecution                           = (t_NtYieldExecution)GetProcAddress(hNtdll, "NtYieldExecution");
+    _NtGetContextThread                         = (t_NtGetContextThread)GetProcAddress(hNtdll, "NtGetContextThread");
+    _NtSetContextThread                         = (t_NtSetContextThread)GetProcAddress(hNtdll, "NtSetContextThread");
+    _KiUserExceptionDispatcher                  = (t_KiUserExceptionDispatcher)GetProcAddress(hNtdll, "KiUserExceptionDispatcher");
+    _NtContinue                                 = (t_NtContinue)GetProcAddress(hNtdll, "NtContinue");
+    _NtClose                                    = (t_NtClose)GetProcAddress(hNtdll, "NtClose");
+    _NtDuplicateObject                          = (t_NtDuplicateObject)GetProcAddress(hNtdll, "NtDuplicateObject");
+    _NtSetDebugFilterState                      = (t_NtSetDebugFilterState)GetProcAddress(hNtdll, "NtSetDebugFilterState");
+    _NtCreateThread                             = (t_NtCreateThread)GetProcAddress(hNtdll, "NtCreateThread");
+    _NtCreateThreadEx                           = (t_NtCreateThreadEx)GetProcAddress(hNtdll, "NtCreateThreadEx");
+    _NtQuerySystemTime                          = (t_NtQuerySystemTime)GetProcAddress(hNtdll, "NtQuerySystemTime");
+    _NtQueryPerformanceCounter                  = (t_NtQueryPerformanceCounter)GetProcAddress(hNtdll, "NtQueryPerformanceCounter");
+    _NtResumeThread                             = (t_NtResumeThread)GetProcAddress(hNtdll, "NtResumeThread");
 
     g_log.LogDebug(L"ApplyNtdllHook -> _NtSetInformationThread %p _NtQuerySystemInformation %p _NtQueryInformationProcess %p _NtSetInformationProcess %p _NtQueryObject %p",
         _NtSetInformationThread,
@@ -471,10 +494,12 @@ bool ApplyUserHook(HOOK_DLL_DATA * hdd, HANDLE hProcess, BYTE * dllMemory, DWORD
     return true;
 }
 
+//----------------------------------------------------------------------------------
 void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
 {
     auto peb = scl::GetPeb(hProcess);
-    if (!peb) {
+    if (!peb)
+    {
         g_log.LogError(L"Failed to read PEB from remote process");
     }
     else
@@ -484,7 +509,8 @@ void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
         if (flags & PEB_PATCH_NtGlobalFlag)
             peb->NtGlobalFlag &= ~0x70;
 
-        if (flags & PEB_PATCH_ProcessParameters) {
+        if (flags & PEB_PATCH_ProcessParameters)
+        {
             if (!scl::PebPatchProcessParameters(peb.get(), hProcess))
                 g_log.LogError(L"Failed to patch PEB!ProcessParameters");
         }
@@ -496,13 +522,10 @@ void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
         }
 
         if (flags & PEB_PATCH_OsBuildNumber)
-        {
             peb->OSBuildNumber++;
-        }
 
         if (!scl::SetPeb(hProcess, peb.get()))
             g_log.LogError(L"Failed to write PEB to remote process");
-
     }
 
 #ifndef _WIN64
@@ -510,7 +533,8 @@ void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
         return;
 
     auto peb64 = scl::Wow64GetPeb64(hProcess);
-    if (!peb64) {
+    if (!peb64)
+    {
         g_log.LogError(L"Failed to read PEB64 from remote process");
     }
     else
@@ -531,10 +555,8 @@ void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
                 g_log.LogError(L"Failed to patch flags in PEB64!ProcessHeaps");
         }
 
-        if (flags & PEB_PATCH_OsBuildNumber)
-        {
+        if ((flags & PEB_PATCH_OsBuildNumber) != 0)
             peb64->OSBuildNumber++;
-        }
 
         if (!scl::Wow64SetPeb64(hProcess, peb64.get()))
             g_log.LogError(L"Failed to write PEB64 to remote process");
@@ -542,6 +564,7 @@ void ApplyPEBPatch(HANDLE hProcess, DWORD flags)
 #endif
 }
 
+//----------------------------------------------------------------------------------
 void ApplyNtdllVersionPatch(HANDLE hProcess)
 {
     // This will get the 32 bit ntdll if we are on Wow64, which is fine.
@@ -570,6 +593,7 @@ void ApplyNtdllVersionPatch(HANDLE hProcess)
         g_log.LogError(L"Failed to obtain size of VS_VERSION_INFO resource in ntdll.dll: %08X", Status);
         return;
     }
+
     if (Address == nullptr || Size == 0)
     {
         g_log.LogError(L"VS_VERSION_INFO resource in ntdll.dll has size zero");
@@ -613,21 +637,21 @@ void ApplyNtdllVersionPatch(HANDLE hProcess)
     }
 }
 
+//----------------------------------------------------------------------------------
 void RestoreMemory(HANDLE hProcess, DWORD_PTR address, void * buffer, int bufferSize)
 {
     DWORD protect = 0;
-    if (address && buffer && bufferSize)
+    if (address != 0 && buffer != nullptr && bufferSize != 0)
     {
         if (VirtualProtectEx(hProcess, (void *)address, bufferSize, PAGE_EXECUTE_READWRITE, &protect))
         {
             WriteProcessMemory(hProcess, (void *)address, buffer, bufferSize, 0);
-
             VirtualProtectEx(hProcess, (void *)address, bufferSize, protect, &protect);
         }
     }
-
 }
 
+//----------------------------------------------------------------------------------
 void RestoreJumper(HANDLE hProcess, void* address, void * backupAddress, DWORD backupSize)
 {
     if (address && backupAddress && backupSize)
@@ -636,23 +660,21 @@ void RestoreJumper(HANDLE hProcess, void* address, void * backupAddress, DWORD b
         if (backup)
         {
             if (ReadProcessMemory(hProcess, backupAddress, backup, backupSize, 0))
-            {
                 RestoreMemory(hProcess, (DWORD_PTR)address, backup, backupSize);
-            }
 
             free(backup);
         }
     }
 }
 
+//----------------------------------------------------------------------------------
 void FreeMemory(HANDLE hProcess, void * buffer)
 {
-    if (hProcess && buffer)
-    {
+    if (hProcess != NULL && buffer != nullptr)
         VirtualFreeEx(hProcess, buffer, 0, MEM_RELEASE);
-    }
 }
 
+//----------------------------------------------------------------------------------
 void RestoreNtdllHooks(HOOK_DLL_DATA * hdd, HANDLE hProcess)
 {
 #ifndef _WIN64
@@ -769,19 +791,13 @@ void RestoreUserHooks(HOOK_DLL_DATA * hdd, HANDLE hProcess)
 void RestoreHooks(HOOK_DLL_DATA * hdd, HANDLE hProcess)
 {
     if (hdd->isNtdllHooked)
-    {
         RestoreNtdllHooks(hdd, hProcess);
-    }
 
     if (hdd->isKernel32Hooked)
-    {
         RestoreKernel32Hooks(hdd, hProcess);
-    }
 
     if (hdd->isUserDllHooked)
-    {
         RestoreUserHooks(hdd, hProcess);
-    }
 
     FreeMemory(hProcess, hdd->hDllImage);
     hdd->hDllImage = 0;
@@ -793,17 +809,13 @@ bool ApplyHook(HOOK_DLL_DATA * hdd, HANDLE hProcess, BYTE * dllMemory, DWORD_PTR
     hdd->hDllImage = (HMODULE)imageBase;
 
     if (!hdd->isNtdllHooked)
-    {
         success = success && ApplyNtdllHook(hdd, hProcess, dllMemory, imageBase);
-    }
+
     if (!hdd->isKernel32Hooked)
-    {
         success = success && ApplyKernel32Hook(hdd, hProcess, dllMemory, imageBase);
-    }
+
     if (!hdd->isUserDllHooked)
-    {
         success = success && ApplyUserHook(hdd, hProcess, dllMemory, imageBase);
-    }
 
 #ifndef _WIN64
     hdd->NativeCallContinue = NativeCallContinue;

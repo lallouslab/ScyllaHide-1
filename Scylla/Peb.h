@@ -91,7 +91,7 @@ namespace scl {
 
     };
 
-    template <typename T, typename NGF, int A>
+    template <typename T, typename NGF, int GDIBUFFERSIZE>
     struct _PEB_T
     {
         union
@@ -163,7 +163,7 @@ namespace scl {
             T ImageProcessAffinityMask;
             T ActiveProcessAffinityMask;
         };
-        T GdiHandleBuffer[A];
+        T GdiHandleBuffer[GDIBUFFERSIZE];
         T PostProcessInitRoutine;
         T TlsExpansionBitmap;
         DWORD TlsExpansionBitmapBits[32];

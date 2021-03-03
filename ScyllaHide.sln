@@ -89,7 +89,6 @@ Global
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Debug|Win32.ActiveCfg = Debug|Win32
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Debug|Win32.Build.0 = Debug|Win32
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Debug|x64.ActiveCfg = Debug|x64
-		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Debug|x64.Build.0 = Debug|x64
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Release|Win32.ActiveCfg = Release|Win32
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Release|Win32.Build.0 = Release|Win32
 		{0520906F-4296-4BEC-BD5F-B370E1F7800A}.Release|x64.ActiveCfg = Release|x64
@@ -108,7 +107,8 @@ Global
 		{9EEA6D78-4E74-47B9-8746-B8754B15525D}.Release|x64.ActiveCfg = Release|Win32
 		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Debug|Win32.ActiveCfg = Debug|Win32
 		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Debug|Win32.Build.0 = Debug|Win32
-		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Debug|x64.ActiveCfg = Debug|Win32
+		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Debug|x64.ActiveCfg = Debug|x64
+		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Debug|x64.Build.0 = Debug|x64
 		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Release|Win32.ActiveCfg = Release|Win32
 		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Release|Win32.Build.0 = Release|Win32
 		{A94B6222-ABEF-41A0-BE48-06801157AAA5}.Release|x64.ActiveCfg = Release|Win32
@@ -155,7 +155,6 @@ Global
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Debug|Win32.ActiveCfg = Debug|Win32
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Debug|Win32.Build.0 = Debug|Win32
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Debug|x64.ActiveCfg = Debug|x64
-		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Debug|x64.Build.0 = Debug|x64
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Release|Win32.ActiveCfg = Release|Win32
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Release|Win32.Build.0 = Release|Win32
 		{5EEACDD3-61B9-4E6A-BB47-5F37C03973C3}.Release|x64.ActiveCfg = Release|x64
@@ -171,5 +170,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {09A990FB-0F69-497E-AB3E-03CDDBFA57FB}
 	EndGlobalSection
 EndGlobal

@@ -7,7 +7,7 @@
 #include <Scylla/Settings.h>
 #include <Scylla/Util.h>
 
-#include "..\InjectorCLI\\ApplyHooking.h"
+#include "..\InjectorCLI\ApplyHooking.h"
 
 extern scl::Settings g_settings;
 extern scl::Logger g_log;
@@ -26,6 +26,7 @@ BYTE* RemoteBreakinPatch;
 BYTE OllyRemoteBreakInReplacement[8];
 HANDLE hDebuggee;
 
+//----------------------------------------------------------------------------------
 void ReadNtApiInformation(HOOK_DLL_DATA *hdd)
 {
     scl::User32Loader user32Loader;
@@ -261,7 +262,12 @@ bool SafeResumeProcess(PPROCESS_SUSPEND_INFO suspendInfo)
     return success;
 }
 
-bool StartHooking(HANDLE hProcess, HOOK_DLL_DATA *hdd, BYTE * dllMemory, DWORD_PTR imageBase)
+//----------------------------------------------------------------------------------
+bool StartHooking(
+    HANDLE hProcess,
+    HOOK_DLL_DATA *hdd,
+    BYTE * dllMemory,
+    DWORD_PTR imageBase)
 {
     hdd->dwProtectedProcessId = GetCurrentProcessId();
     hdd->EnableProtectProcessId = TRUE;
@@ -288,7 +294,12 @@ bool StartHooking(HANDLE hProcess, HOOK_DLL_DATA *hdd, BYTE * dllMemory, DWORD_P
     return ApplyHook(hdd, hProcess, dllMemory, imageBase);
 }
 
-void startInjectionProcess(HANDLE hProcess, HOOK_DLL_DATA *hdd, BYTE * dllMemory, bool newProcess)
+//----------------------------------------------------------------------------------
+void startInjectionProcess(
+    HANDLE hProcess,
+    HOOK_DLL_DATA *hdd,
+    BYTE * dllMemory,
+    bool newProcess)
 {
     PROCESS_SUSPEND_INFO suspendInfo;
     if (!SafeSuspendProcess(hProcess, &suspendInfo))
@@ -302,20 +313,14 @@ void startInjectionProcess(HANDLE hProcess, HOOK_DLL_DATA *hdd, BYTE * dllMemory
     {
         //g_log.Log(L"Apply hooks again");
         if (injectDll && StartHooking(hProcess, hdd, dllMemory, (DWORD_PTR)remoteImageBase))
-        {
             WriteProcessMemory(hProcess, (LPVOID)((DWORD_PTR)hookDllDataAddressRva + (DWORD_PTR)remoteImageBase), hdd, sizeof(HOOK_DLL_DATA), 0);
-        }
         else if (!injectDll)
-        {
             StartHooking(hProcess, hdd, nullptr, 0);
-        }
     }
     else
     {
         if (g_settings.opts().removeDebugPrivileges)
-        {
             RemoveDebugPrivileges(hProcess);
-        }
 
         RestoreHooks(hdd, hProcess);
 
@@ -486,13 +491,9 @@ LPVOID StealthDllInjection(HANDLE hProcess, const WCHAR * dllPath, BYTE * dllMem
                 HANDLE hThread;
                 NTSTATUS status = CreateAndWaitForThread(hProcess, (LPTHREAD_START_ROUTINE)dllMain, remoteImageBaseOfInjectedDll, &hThread, TRUE);
                 if (NT_SUCCESS(status))
-                {
                     CloseHandle(hThread);
-                }
                 else
-                {
                     g_log.LogError(L"DLL INJECTION: Failed to start thread: 0x%08X!", status);
-                }
             }
         }
         else

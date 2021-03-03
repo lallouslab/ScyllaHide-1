@@ -31,7 +31,13 @@ SAVE_DEBUG_REGISTERS ArrayDebugRegister[100] = { 0 }; //Max 100 threads
     if(ReturnLength != nullptr) \
         (*ReturnLength) = TempReturnLength
 
-NTSTATUS NTAPI HookedNtSetInformationThread(HANDLE ThreadHandle, THREADINFOCLASS ThreadInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength)
+
+//----------------------------------------------------------------------------------
+NTSTATUS NTAPI HookedNtSetInformationThread(
+	HANDLE ThreadHandle, 
+	THREADINFOCLASS ThreadInformationClass, 
+	PVOID ThreadInformation, 
+	ULONG ThreadInformationLength)
 {
     if (ThreadInformationClass == ThreadHideFromDebugger && ThreadInformationLength == 0) // NB: ThreadInformation is not checked, this is deliberate
     {
@@ -44,17 +50,22 @@ NTSTATUS NTAPI HookedNtSetInformationThread(HANDLE ThreadHandle, THREADINFOCLASS
     return HookDllData.dNtSetInformationThread(ThreadHandle, ThreadInformationClass, ThreadInformation, ThreadInformationLength);
 }
 
-NTSTATUS NTAPI HookedNtQuerySystemInformation(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength)
+//----------------------------------------------------------------------------------
+NTSTATUS NTAPI HookedNtQuerySystemInformation(
+    SYSTEM_INFORMATION_CLASS SystemInformationClass,
+    PVOID SystemInformation,
+    ULONG SystemInformationLength,
+    PULONG ReturnLength)
 {
-    if (SystemInformationClass == SystemKernelDebuggerInformation ||
-        SystemInformationClass == SystemProcessInformation ||
-        SystemInformationClass == SystemSessionProcessInformation ||
-        SystemInformationClass == SystemHandleInformation ||
-        SystemInformationClass == SystemExtendedHandleInformation ||
-        SystemInformationClass == SystemExtendedProcessInformation ||   // Vista+
-        SystemInformationClass == SystemCodeIntegrityInformation ||     // Vista+
+    if (SystemInformationClass == SystemKernelDebuggerInformation   ||
+        SystemInformationClass == SystemProcessInformation          ||
+        SystemInformationClass == SystemSessionProcessInformation   ||
+        SystemInformationClass == SystemHandleInformation           ||
+        SystemInformationClass == SystemExtendedHandleInformation   ||
+        SystemInformationClass == SystemExtendedProcessInformation  ||  // Vista+
+        SystemInformationClass == SystemCodeIntegrityInformation    ||  // Vista+
         SystemInformationClass == SystemKernelDebuggerInformationEx ||  // 8.1+
-        SystemInformationClass == SystemKernelDebuggerFlags ||          // 10+
+        SystemInformationClass == SystemKernelDebuggerFlags         ||  // 10+
         SystemInformationClass == SystemCodeIntegrityUnlockInformation) // 10+
     {
         NTSTATUS ntStat = HookDllData.dNtQuerySystemInformation(SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
@@ -154,7 +165,7 @@ static ULONG ValueProcessDebugFlags = PROCESS_DEBUG_INHERIT; // actual value is 
 static bool IsProcessHandleTracingEnabled = false;
 
 #ifndef STATUS_INVALID_PARAMETER
-#define STATUS_INVALID_PARAMETER         ((DWORD   )0xC000000DL)
+    #define STATUS_INVALID_PARAMETER         ((DWORD   )0xC000000DL)
 #endif
 
 // Instrumentation callback
@@ -1055,6 +1066,7 @@ void FilterObject(POBJECT_TYPE_INFORMATION pObject, bool zeroTotal)
     }
 }
 
+//----------------------------------------------------------------------------------
 void FakeCurrentParentProcessId(PSYSTEM_PROCESS_INFORMATION pInfo)
 {
     while (true)
@@ -1072,6 +1084,7 @@ void FakeCurrentParentProcessId(PSYSTEM_PROCESS_INFORMATION pInfo)
     }
 }
 
+//----------------------------------------------------------------------------------
 void FakeCurrentOtherOperationCount(PSYSTEM_PROCESS_INFORMATION pInfo)
 {
     while (true)
@@ -1091,6 +1104,7 @@ void FakeCurrentOtherOperationCount(PSYSTEM_PROCESS_INFORMATION pInfo)
     }
 }
 
+//----------------------------------------------------------------------------------
 void FilterProcess(PSYSTEM_PROCESS_INFORMATION pInfo)
 {
     PSYSTEM_PROCESS_INFORMATION pPrev = pInfo;
@@ -1103,13 +1117,9 @@ void FilterProcess(PSYSTEM_PROCESS_INFORMATION pInfo)
                 ZeroMemory(pInfo->ImageName.Buffer, pInfo->ImageName.Length);
 
             if (pInfo->NextEntryOffset == 0) //last element
-            {
                 pPrev->NextEntryOffset = 0;
-            }
             else
-            {
                 pPrev->NextEntryOffset += pInfo->NextEntryOffset;
-            }
         }
         else
         {
@@ -1117,16 +1127,13 @@ void FilterProcess(PSYSTEM_PROCESS_INFORMATION pInfo)
         }
 
         if (pInfo->NextEntryOffset == 0)
-        {
             break;
-        }
         else
-        {
             pInfo = (PSYSTEM_PROCESS_INFORMATION)((DWORD_PTR)pInfo + pInfo->NextEntryOffset);
-        }
     }
 }
 
+//----------------------------------------------------------------------------------
 NTSTATUS NTAPI HookedNtResumeThread(HANDLE ThreadHandle, PULONG PreviousSuspendCount)
 {
 	DWORD dwProcessId = GetProcessIdByThreadHandle(ThreadHandle);

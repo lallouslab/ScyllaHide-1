@@ -2,13 +2,10 @@
 #pragma warning(disable : 4996 4512 4127 4201)
 
 
-//for 64bit - p64
-#ifdef BUILD_IDA_64BIT
-#define __EA64__
-#pragma comment(lib, "x86_win_vc_64/ida.lib")
+#ifdef __EA64__
+    #pragma comment(lib, "x64_win_vc_64/ida.lib")
 #else
-//for 32bit - plw
-#pragma comment(lib, "x86_win_vc_32/ida.lib")
+    #pragma comment(lib, "x64_win_vc_32/ida.lib")
 #endif
 
 #include <Windows.h>
@@ -52,33 +49,33 @@ PROCESS_INFORMATION ServerProcessInfo = { 0 };
 STARTUPINFO ServerStartupInfo = { 0 };
 bool isAttach = false;
 
+//----------------------------------------------------------------------------------
 static void LogCallback(const char *message)
 {
     msg("[%s] %s\n", SCYLLA_HIDE_NAME_A, message);
 }
 
+//----------------------------------------------------------------------------------
 static void AttachProcess(DWORD dwPID)
 {
     int res = attach_process((pid_t)dwPID);
 
-    switch (res) {
-    case -1:
+    if (res == -1)
     {
-        MessageBoxA((HWND)callui(ui_get_hwnd).vptr,
+        MessageBoxA(
+            ::GetForegroundWindow(),
             "Can't attach to that process !",
             "ScyllaHide Plugin", MB_OK | MB_ICONERROR);
-        break;
     }
-    case -2:
+    else if (res == -2)
     {
-        MessageBoxA((HWND)callui(ui_get_hwnd).vptr,
+        MessageBoxA(::GetForegroundWindow(),
             "Can't find that PID !",
             "ScyllaHide Plugin", MB_OK | MB_ICONERROR);
-        break;
-    }
     }
 }
 
+//----------------------------------------------------------------------------------
 static bool SetDebugPrivileges()
 {
     TOKEN_PRIVILEGES Debug_Privileges;
@@ -101,188 +98,179 @@ static bool SetDebugPrivileges()
     return retVal;
 }
 
-//callback for various debug events
-static int idaapi debug_mainloop(void *user_data, int notif_code, va_list va)
+//----------------------------------------------------------------------------------
+static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va)
 {
     switch (notif_code)
     {
-    case dbg_process_attach:
-    {
-        isAttach = true;
-        break; //attaching not supported
-    }
-    case dbg_process_start:
-    {
-        isAttach = false;
-
-        const debug_event_t* dbgEvent = va_arg(va, const debug_event_t*);
-
-        ProcessId = dbgEvent->pid;
-        bHooked = false;
-        ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
-
-        if (dbg != nullptr)
+        case dbg_process_attach:
         {
-            //char text[1000];
-            //wsprintfA(text, "dbg->id %d processor %s", dbg->id , dbg->processor);
-            //MessageBoxA(0, text, text,0);
-            // dbg->id DEBUGGER_ID_WINDBG -> 64bit and 32bit
-            // dbg->id DEBUGGER_ID_X86_IA32_WIN32_USER -> 32bit
+            isAttach = true;
+            break; //attaching not supported
+        }
 
-            if (dbg->is_remote())
+        case dbg_process_start:
+        {
+            isAttach = false;
+
+            const debug_event_t * dbgEvent = va_arg(va, const debug_event_t *);
+
+            ProcessId = dbgEvent->pid;
+            bHooked = false;
+            ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
+
+            if (dbg != nullptr)
             {
-                qstring hoststring;
-                char host[MAX_PATH] = { 0 };
-                char port[6] = { 0 };
-                wcstombs(port, g_settings.opts().idaServerPort.c_str(), _countof(port));
+                //char text[1000];
+                //wsprintfA(text, "dbg->id %d processor %s", dbg->id , dbg->processor);
+                //MessageBoxA(0, text, text,0);
+                // dbg->id DEBUGGER_ID_WINDBG -> 64bit and 32bit
+                // dbg->id DEBUGGER_ID_X86_IA32_WIN32_USER -> 32bit
 
-                get_process_options(NULL, NULL, NULL, &hoststring, NULL, NULL);
-                GetHost((char*)hoststring.c_str(), host);
-
-                //msg("Host-String: %s\n", hoststring.c_str());
-                //msg("Host: %s\n", host);
-
-#ifdef BUILD_IDA_64BIT
-                //autostart server if necessary
-                if(g_settings.opts().idaAutoStartServer)
+                if (dbg->is_remote())
                 {
-                    if (!scl::FileExistsW(g_scyllaHidex64ServerPath.c_str()))
-                    {
-                        g_log.LogError(L"Cannot find server executable %s\n", g_scyllaHidex64ServerPath.c_str());
-                    }
+                    qstring hoststring;
+                    qstring host;
+                    char port[6] = { 0 };
+                    wcstombs(port, g_settings.opts().idaServerPort.c_str(), _countof(port));
 
-                    DWORD dwRunningStatus = 0;
-                    if (ServerProcessInfo.hProcess)
-                    {
-                        GetExitCodeProcess(ServerProcessInfo.hProcess, &dwRunningStatus);
-                    }
+                    get_process_options(NULL, NULL, NULL, &hoststring, NULL, NULL);
+                    GetHost(hoststring, host);
 
-                    if(dwRunningStatus != STILL_ACTIVE)
+                    //msg("Host-String: %s\n", hoststring.c_str());
+                    //msg("Host: %s\n", host);
+    #ifdef __EA64__
+                    // Autostart server if necessary
+                    if (g_settings.opts().idaAutoStartServer)
                     {
+                        if (!scl::FileExistsW(g_scyllaHidex64ServerPath.c_str()))
+                        {
+                            g_log.LogError(L"Cannot find server executable %s\n", g_scyllaHidex64ServerPath.c_str());
+                        }
+
+                        DWORD dwRunningStatus = 0;
                         if (ServerProcessInfo.hProcess)
                         {
-                            CloseHandle(ServerProcessInfo.hProcess);
-                            CloseHandle(ServerProcessInfo.hThread);
+                            GetExitCodeProcess(ServerProcessInfo.hProcess, &dwRunningStatus);
                         }
 
-                        ZeroMemory(&ServerStartupInfo, sizeof(ServerStartupInfo));
-                        ZeroMemory(&ServerProcessInfo, sizeof(ServerProcessInfo));
+                        if(dwRunningStatus != STILL_ACTIVE)
+                        {
+                            if (ServerProcessInfo.hProcess)
+                            {
+                                CloseHandle(ServerProcessInfo.hProcess);
+                                CloseHandle(ServerProcessInfo.hThread);
+                            }
 
-                        WCHAR commandline[MAX_PATH*2] = {0};
-                        wcscpy(commandline, g_scyllaHidex64ServerPath.c_str());
-                        wcscat(commandline, L" ");
-                        wcscat(commandline, g_settings.opts().idaServerPort.c_str());
-                        ServerStartupInfo.cb = sizeof(ServerStartupInfo);
-                        if (!CreateProcessW(0, commandline, NULL, NULL, FALSE, 0, NULL, NULL, &ServerStartupInfo, &ServerProcessInfo))
-                        {
-                            g_log.LogError(L"Cannot start server, error %d", GetLastError());
-                        }
-                        else
-                        {
-                            g_log.LogInfo(L"Started IDA Server successfully");
+                            ZeroMemory(&ServerStartupInfo, sizeof(ServerStartupInfo));
+                            ZeroMemory(&ServerProcessInfo, sizeof(ServerProcessInfo));
+
+                            WCHAR commandline[MAX_PATH*2] = {0};
+                            wcscpy(commandline, g_scyllaHidex64ServerPath.c_str());
+                            wcscat(commandline, L" ");
+                            wcscat(commandline, g_settings.opts().idaServerPort.c_str());
+                            ServerStartupInfo.cb = sizeof(ServerStartupInfo);
+                            if (!CreateProcessW(0, commandline, NULL, NULL, FALSE, 0, NULL, NULL, &ServerStartupInfo, &ServerProcessInfo))
+                            {
+                                g_log.LogError(L"Cannot start server, error %d", GetLastError());
+                            }
+                            else
+                            {
+                                g_log.LogInfo(L"Started IDA Server successfully");
+                            }
                         }
                     }
-                }
-#endif
-                if (ConnectToServer(host, port))
-                {
-                    if (!SendEventToServer(notif_code, ProcessId))
+    #endif
+                    if (ConnectToServer(host.c_str(), port))
                     {
-                        g_log.LogError(L"SendEventToServer failed");
+                        if (!SendEventToServer(notif_code, ProcessId))
+                            g_log.LogError(L"SendEventToServer failed");
+                    }
+                    else
+                    {
+                        g_log.LogError(L"Cannot connect to host %s", host);
                     }
                 }
                 else
                 {
-                    g_log.LogError(L"Cannot connect to host %s", host);
+    #ifndef __EA64__
+                    if (!scl::IsWindows64() && !bHooked) // Only apply on native x86 OS, see dbg_library_unload below
+                    {
+                        ReadNtApiInformation(&g_hdd);
+
+                        bHooked = true;
+                        startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
+                    }
+    #else
+                    g_log.LogError(L"Error IDA_64BIT please contact ScyllaHide developers!");
+    #endif
                 }
             }
-            else
-            {
+            break;
+        }
 
-#ifndef BUILD_IDA_64BIT
-                if (!scl::IsWindows64() && !bHooked) // Only apply on native x86 OS, see dbg_library_unload below
+        case dbg_process_exit:
+        {
+            if (!isAttach && dbg->is_remote())
+            {
+                if (!SendEventToServer(notif_code, ProcessId))
+                    g_log.LogError(L"SendEventToServer failed");
+
+                CloseServerSocket();
+            }
+            ProcessId = 0;
+            bHooked = false;
+            break;
+        }
+
+        case dbg_library_load:
+        {
+
+            if (!isAttach && dbg->is_remote())
+            {
+                if (!SendEventToServer(notif_code, ProcessId))
                 {
-                    ReadNtApiInformation(&g_hdd);
-
-                    bHooked = true;
-                    startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
+                    g_log.LogError(L"SendEventToServer failed");
                 }
-#else
-                g_log.LogError(L"Error IDA_64BIT please contact ScyllaHide developers!");
-#endif
             }
-        }
-    }
-    break;
-
-    case dbg_process_exit:
-    {
-        if (!isAttach && dbg->is_remote())
-        {
-            if (!SendEventToServer(notif_code, ProcessId))
+            else if (!isAttach)
             {
-                g_log.LogError(L"SendEventToServer failed");
+    #ifndef __EA64__
+                if (bHooked)
+                    startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), false);
+    #endif
             }
-
-            CloseServerSocket();
+            break;
         }
-        ProcessId = 0;
-        bHooked = false;
-    }
-    break;
 
-    case dbg_library_load:
-    {
-
-        if (!isAttach && dbg->is_remote())
+#ifndef __EA64__
+        case dbg_library_unload:
         {
-            if (!SendEventToServer(notif_code, ProcessId))
+            if (scl::IsWindows64() && !bHooked)
             {
-                g_log.LogError(L"SendEventToServer failed");
+                // Bogus unload event which is actually a load of a native x64 DLL (ntdll, wow64, wow64cpu, wow64win)
+                ReadNtApiInformation(&g_hdd);
+
+                bHooked = true;
+                startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
             }
+            break;
         }
-        else if (!isAttach)
-        {
-#ifndef BUILD_IDA_64BIT
-            if (bHooked)
-            {
-                startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), false);
-            }
-#endif
-        }
-
-    }
-    break;
-
-#ifndef BUILD_IDA_64BIT
-    case dbg_library_unload:
-    {
-        if (scl::IsWindows64() && !bHooked)
-        {
-            // Bogus unload event which is actually a load of a native x64 DLL (ntdll, wow64, wow64cpu, wow64win)
-            ReadNtApiInformation(&g_hdd);
-
-            bHooked = true;
-            startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
-        }
-    }
-    break;
 #endif
 
-    case dbg_bpt:
-    {
-        thid_t tid = va_arg(va, thid_t);
-        ea_t breakpoint_ea = va_arg(va, ea_t);
-        va_arg(va, int*);
-    }
-    break;
+        case dbg_bpt:
+        {
+            thid_t tid = va_arg(va, thid_t);
+            ea_t breakpoint_ea = va_arg(va, ea_t);
+            va_arg(va, int*);
+            break;
+        }
 
-    case dbg_exception:
-    {
-        const debug_event_t* dbgEvent = va_arg(va, const debug_event_t*);
-
-    }
-    break;
+        case dbg_exception:
+        {
+            const debug_event_t* dbgEvent = va_arg(va, const debug_event_t*);
+            break;
+        }
     }
 
     return 0;
@@ -295,16 +283,18 @@ static void idaapi IDAP_term(void)
 }
 
 //called when user clicks in plugin menu or presses hotkey
-static void idaapi IDAP_run(int arg)
+static bool idaapi IDAP_run(size_t arg)
 {
-    DialogBoxW(hinst, MAKEINTRESOURCE(IDD_OPTIONS), (HWND)callui(ui_get_hwnd).vptr, &OptionsDlgProc);
+    DialogBoxW(hinst, MAKEINTRESOURCE(IDD_OPTIONS), GetForegroundWindow(), &OptionsDlgProc);
+    return true;
 }
 
 //init the plugin
-static int idaapi IDAP_init(void)
+static plugmod_t *idaapi IDAP_init(void)
 {
-    //ensure target is PE executable
-    if (inf.filetype != f_PE) return PLUGIN_SKIP;
+    // Ensure target is PE executable
+    if (inf.filetype != f_PE)
+        return PLUGIN_SKIP;
 
     //install hook for debug mainloop
     if (!hook_to_notification_point(HT_DBG, debug_mainloop, NULL))
@@ -326,7 +316,7 @@ static int idaapi IDAP_init(void)
 }
 
 // There isn't much use for these yet, but I set them anyway.
-static char IDAP_comment[] = SCYLLA_HIDE_NAME_A " usermode Anti-Anti-Debug Plugin";
+static char IDAP_comment[] = SCYLLA_HIDE_NAME_A " Usermode Anti-Anti-Debug Plugin";
 static char IDAP_help[] = SCYLLA_HIDE_NAME_A;
 
 // The name of the plug-in displayed in the Edit->Plugins menu

@@ -69,6 +69,7 @@ static USHORT DebugObjectTypeIndex = 0;
 static USHORT ProcessTypeIndex = 0;
 static USHORT ThreadTypeIndex = 0;
 
+//----------------------------------------------------------------------------------
 bool IsProcessNameBad(PUNICODE_STRING processName)
 {
 	if (processName == nullptr || processName->Length == 0 || processName->Buffer == nullptr)

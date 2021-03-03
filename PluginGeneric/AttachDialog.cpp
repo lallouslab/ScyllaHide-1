@@ -27,7 +27,7 @@ extern HWND hwmain; // Handle of main OllyDbg window
 #elif OLLY2
 HWND hwmain = hwollymain;
 #elif __IDP__
-HWND hwmain = (HWND)callui(ui_get_hwnd).vptr;
+HWND hwmain = NULL;
 #elif X64DBG
 extern HWND hwndDlg;
 HWND hwmain;
@@ -83,40 +83,26 @@ BOOL CheckWindowValidity(HWND hwnd, HWND hwndToCheck)
 {
     HWND hwndTemp = NULL;
 
-    if (hwndToCheck == NULL)
-    {
+    if (hwndToCheck == NULL || IsWindow(hwndToCheck) == FALSE)
         return FALSE;
-    }
 
-    if (IsWindow(hwndToCheck) == FALSE)
-    {
-        return FALSE;
-    }
 
     //same window as previous?
     if (hwndToCheck == hwndFoundWindow)
-    {
         return FALSE;
-    }
 
     //debugger window is not a valid one
     if (hwndToCheck == hwmain)
-    {
         return FALSE;
-    }
 
     // It also must not be the "Search Window" dialog box itself.
     if (hwndToCheck == hwnd)
-    {
         return FALSE;
-    }
 
     // It also must not be one of the dialog box's children...
     hwndTemp = GetParent(hwndToCheck);
     if ((hwndTemp == hwnd) || (hwndTemp == hwmain))
-    {
         return FALSE;
-    }
 
     hwndFoundWindow = hwndToCheck;
     return TRUE;
@@ -179,13 +165,9 @@ INT_PTR CALLBACK AttachProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                 EndDialog(hWnd, NULL);
 
                 if (_AttachProcess != 0)
-                {
                     _AttachProcess(pid);
-                }
                 else
-                {
                     MessageBoxW(0, L"Developer!!! You forgot something _AttachProcess!!!!!", L"ERROR", 0);
-                }
             }
             break;
         }
@@ -230,13 +212,9 @@ INT_PTR CALLBACK AttachProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
             // Set the screen cursor to the BullsEye cursor.
             if (hCursorSearchWindow)
-            {
                 hCursorPrevious = SetCursor(hCursorSearchWindow);
-            }
             else
-            {
                 hCursorPrevious = NULL;
-            }
 
             //redirect all mouse events to this AttachProc
             SetCapture(hWnd);

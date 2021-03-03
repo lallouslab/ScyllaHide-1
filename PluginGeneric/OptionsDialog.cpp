@@ -22,7 +22,7 @@
 #include "..\ScyllaHideOlly2Plugin\resource.h"
 
 #elif defined(__IDP__)
-//#define BUILD_IDA_64BIT 1
+
 #include <ida.hpp>
 #include <idp.hpp>
 #include <dbg.hpp>
@@ -75,7 +75,8 @@ static void UpdateOptionsExceptions(HWND hWnd, const scl::Settings *settings)
         opts->handleExceptionRip;
 
 #elif defined(__IDP__)
-    auto check = opts->handleExceptionNoncontinuableException &&
+    auto check =
+        opts->handleExceptionNoncontinuableException &&
         opts->handleExceptionPrint &&
         opts->handleExceptionAssertionFailure &&
         opts->handleExceptionRip;
@@ -173,7 +174,7 @@ static void UpdateOptions(HWND hWnd, const scl::Settings *settings)
     CheckDlgButton(hWnd, IDC_AUTOSTARTSERVER, opts->idaAutoStartServer);
     SetDlgItemTextW(hWnd, IDC_SERVERPORT, opts->idaServerPort.c_str());
 
-#ifdef BUILD_IDA_64BIT
+#ifdef __EA64__
     EnableWindow(GetDlgItem(hWnd, IDC_AUTOSTARTSERVER), scl::IsWindows64());
 #else
     EnableWindow(GetDlgItem(hWnd, IDC_AUTOSTARTSERVER), FALSE);
@@ -185,23 +186,24 @@ static void UpdateOptions(HWND hWnd, const scl::Settings *settings)
     UpdateOptionsExceptions(hWnd, settings);
 }
 
+//----------------------------------------------------------------------------------
 void SaveOptions(HWND hWnd, scl::Settings *settings)
 {
     auto opts = &settings->opts();
 
-    opts->fixPebBeingDebugged = (IsDlgButtonChecked(hWnd, IDC_PEBBEINGDEBUGGED) == BST_CHECKED);
-    opts->fixPebHeapFlags = (IsDlgButtonChecked(hWnd, IDC_PEBHEAPFLAGS) == BST_CHECKED);
-    opts->fixPebNtGlobalFlag = (IsDlgButtonChecked(hWnd, IDC_PEBNTGLOBALFLAG) == BST_CHECKED);
-    opts->fixPebStartupInfo = (IsDlgButtonChecked(hWnd, IDC_PEBSTARTUPINFO) == BST_CHECKED);
-    opts->fixPebOsBuildNumber = (IsDlgButtonChecked(hWnd, IDC_PEBOSBUILDNUMBER) == BST_CHECKED);
-    opts->hookNtSetInformationThread = (IsDlgButtonChecked(hWnd, IDC_NTSETINFORMATIONTHREAD) == BST_CHECKED);
-    opts->hookNtSetInformationProcess = (IsDlgButtonChecked(hWnd, IDC_NTSETINFORMATIONPROCESS) == BST_CHECKED);
-    opts->hookNtQuerySystemInformation = (IsDlgButtonChecked(hWnd, IDC_NTQUERYSYSTEMINFORMATION) == BST_CHECKED);
-    opts->hookNtQueryInformationProcess = (IsDlgButtonChecked(hWnd, IDC_NTQUERYINFORMATIONPROCESS) == BST_CHECKED);
-    opts->hookNtQueryObject = (IsDlgButtonChecked(hWnd, IDC_NTQUERYOBJECT) == BST_CHECKED);
-    opts->hookNtYieldExecution = (IsDlgButtonChecked(hWnd, IDC_NTYIELDEXECUTION) == BST_CHECKED);
-    opts->hookOutputDebugStringA = (IsDlgButtonChecked(hWnd, IDC_OUTPUTDEBUGSTRINGA) == BST_CHECKED);
-    opts->hookNtGetContextThread = (IsDlgButtonChecked(hWnd, IDC_NTGETCONTEXTTHREAD) == BST_CHECKED);
+    opts->fixPebBeingDebugged                   = (IsDlgButtonChecked(hWnd, IDC_PEBBEINGDEBUGGED) == BST_CHECKED);
+    opts->fixPebHeapFlags                       = (IsDlgButtonChecked(hWnd, IDC_PEBHEAPFLAGS) == BST_CHECKED);
+    opts->fixPebNtGlobalFlag                    = (IsDlgButtonChecked(hWnd, IDC_PEBNTGLOBALFLAG) == BST_CHECKED);
+    opts->fixPebStartupInfo                     = (IsDlgButtonChecked(hWnd, IDC_PEBSTARTUPINFO) == BST_CHECKED);
+    opts->fixPebOsBuildNumber                   = (IsDlgButtonChecked(hWnd, IDC_PEBOSBUILDNUMBER) == BST_CHECKED);
+    opts->hookNtSetInformationThread            = (IsDlgButtonChecked(hWnd, IDC_NTSETINFORMATIONTHREAD) == BST_CHECKED);
+    opts->hookNtSetInformationProcess           = (IsDlgButtonChecked(hWnd, IDC_NTSETINFORMATIONPROCESS) == BST_CHECKED);
+    opts->hookNtQuerySystemInformation          = (IsDlgButtonChecked(hWnd, IDC_NTQUERYSYSTEMINFORMATION) == BST_CHECKED);
+    opts->hookNtQueryInformationProcess         = (IsDlgButtonChecked(hWnd, IDC_NTQUERYINFORMATIONPROCESS) == BST_CHECKED);
+    opts->hookNtQueryObject                     = (IsDlgButtonChecked(hWnd, IDC_NTQUERYOBJECT) == BST_CHECKED);
+    opts->hookNtYieldExecution                  = (IsDlgButtonChecked(hWnd, IDC_NTYIELDEXECUTION) == BST_CHECKED);
+    opts->hookOutputDebugStringA                = (IsDlgButtonChecked(hWnd, IDC_OUTPUTDEBUGSTRINGA) == BST_CHECKED);
+    opts->hookNtGetContextThread                = (IsDlgButtonChecked(hWnd, IDC_NTGETCONTEXTTHREAD) == BST_CHECKED);
     opts->hookNtSetContextThread = (IsDlgButtonChecked(hWnd, IDC_NTSETCONTEXTTHREAD) == BST_CHECKED);
     opts->hookNtContinue = (IsDlgButtonChecked(hWnd, IDC_NTCONTINUE) == BST_CHECKED);
     opts->hookKiUserExceptionDispatcher = (IsDlgButtonChecked(hWnd, IDC_KIUED) == BST_CHECKED);
@@ -373,7 +375,7 @@ HWND CreateTooltips(HWND hDlg)
         {
             IDC_NTSETDEBUGFILTERSTATE,
             L"ScyllaHide returns always STATUS_ACCESS_DENIED.\r\n"
-            L"This anti-debugn measurement isn't used very often.\r\n"
+            L"This anti-debug measurement isn't used very often.\r\n"
             L"Probably you will never need this option in a real world target."
         },
         {
@@ -572,315 +574,313 @@ INT_PTR CALLBACK OptionsDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 {
     switch (message)
     {
-    case WM_INITDIALOG:
-    {
-        // add current profile to options title
-        auto wstrTitle = scl::fmtw(L"[ScyllaHide Options] Profile: %s", g_settings.profile_name().c_str());
-        SetWindowTextW(hDlg, wstrTitle.c_str());
-
-        // fill combobox with profiles
-        for (size_t i = 0; i < g_settings.profile_names().size(); i++)
+        case WM_INITDIALOG:
         {
-            SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_ADDSTRING, 0, (LPARAM)g_settings.profile_names()[i].c_str());
-            if (g_settings.profile_name() == g_settings.profile_names()[i])
-                SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_SETCURSEL, i, 0);
-        }
-
-        UpdateOptions(hDlg, &g_settings);
-
-#ifdef OLLY1
-        EnableWindow(GetDlgItem(hDlg, IDC_X64FIX), !scl::IsWindows64());
-#endif
-
-        CreateTooltips(hDlg);
-
-        break;
-    }
-    case WM_CLOSE:
-    {
-        EndDialog(hDlg, NULL);
-    }
-    break;
-
-    case WM_COMMAND:
-    {
-        switch (LOWORD(wParam))
-        {
-        case IDC_PROFILES:
-        {
-            if (HIWORD(wParam) != CBN_SELCHANGE)
-                break;
-
-            auto profileIdx = (int)SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_GETCURSEL, 0, 0);
-            g_settings.SetProfile(g_settings.profile_names()[profileIdx].c_str());
-
-            // update options title
+            // add current profile to options title
             auto wstrTitle = scl::fmtw(L"[ScyllaHide Options] Profile: %s", g_settings.profile_name().c_str());
             SetWindowTextW(hDlg, wstrTitle.c_str());
 
-            UpdateOptions(hDlg, &g_settings);
-            break;
-        }
-
-        case IDC_SAVEPROFILE:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            std::wstring wstrNewProfileName;
-
-#ifdef OLLY1
-            std::string strNewProfileName;
-            strNewProfileName.resize(MAX_PATH);
-            if (_Gettext("New profile name?", &strNewProfileName[0], 0, 0, 0) <= 0)
-                break;
-            wstrNewProfileName = scl::wstr_conv().from_bytes(strNewProfileName.c_str());
-
-#elif defined(OLLY2)
-            wstrNewProfileName.resize(MAX_PATH);
-            if (Getstring(hDlg, L"New profile name?", &wstrNewProfileName[0], wstrNewProfileName.size(), 0, 0, 0, 0, 0, 0) <= 0)
-                break;
-            wstrNewProfileName.resize(lstrlenW(wstrNewProfileName.c_str()));
-
-#elif defined(__IDP__)
-            auto szNewProfileName = askstr(0, "", "New profile name?");
-            if (!szNewProfileName)
-                break;
-            wstrNewProfileName = scl::wstr_conv().from_bytes(szNewProfileName);
-
-#elif defined(X64DBG)
-            std::string strNewProfileName;
-            strNewProfileName.resize(GUI_MAX_LINE_SIZE);
-            if (!GuiGetLineWindow("New profile name?", &strNewProfileName[0]))
-                break;
-            wstrNewProfileName = scl::wstr_conv().from_bytes(strNewProfileName.c_str());
-#endif
-
-            if (!g_settings.AddProfile(wstrNewProfileName.c_str()))
-                break;
-            g_settings.SetProfile(wstrNewProfileName.c_str());
-
-            auto wstrTitle = scl::fmtw(L"[ScyllaHide Options] Profile: %s", g_settings.profile_name().c_str());
-            SetWindowTextW(hDlg, wstrTitle.c_str());
-
-            SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_ADDSTRING, 0, (LPARAM)wstrNewProfileName.c_str());
-            auto profileCount = (int)SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_GETCOUNT, 0, 0);
-            SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_SETCURSEL, profileCount - 1, 0);
-
-            UpdateOptions(hDlg, &g_settings);
-            break;
-        }
-
-        case IDOK:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            SaveOptions(hDlg, &g_settings);
-
-            if (ProcessId)
+            // fill combobox with profiles
+            for (size_t i = 0; i < g_settings.profile_names().size(); i++)
             {
-#ifdef __IDP__
-#ifndef BUILD_IDA_64BIT
-                startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
-#endif
-#else
-                startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
-#endif
-                bHooked = true;
-                MessageBoxW(hDlg, L"Applied changes! Restarting target is NOT necessary!", L"[ScyllaHide Options]", MB_ICONINFORMATION);
-            }
-            else
-            {
-                MessageBoxW(hDlg, L"Please start the target to apply changes!", L"[ScyllaHide Options]", MB_ICONINFORMATION);
+                SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_ADDSTRING, 0, (LPARAM)g_settings.profile_names()[i].c_str());
+                if (g_settings.profile_name() == g_settings.profile_names()[i])
+                    SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_SETCURSEL, i, 0);
             }
 
+            UpdateOptions(hDlg, &g_settings);
+
+    #ifdef OLLY1
+            EnableWindow(GetDlgItem(hDlg, IDC_X64FIX), !scl::IsWindows64());
+    #endif
+
+            CreateTooltips(hDlg);
+
+            break;
+        }
+        case WM_CLOSE:
             EndDialog(hDlg, NULL);
             break;
-        }
 
-        case IDC_APPLY:
+        case WM_COMMAND:
         {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            SaveOptions(hDlg, &g_settings);
-            break;
-        }
-
-        case IDC_EXCEPTION_ALL:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto value = (IsDlgButtonChecked(hDlg, IDC_EXCEPTION_ALL) == BST_CHECKED);
-            g_settings.opts().handleExceptionPrint = value;
-            g_settings.opts().handleExceptionIllegalInstruction = value;
-            g_settings.opts().handleExceptionInvalidLockSequence = value;
-            g_settings.opts().handleExceptionNoncontinuableException = value;
-            g_settings.opts().handleExceptionRip = value;
-            g_settings.opts().handleExceptionAssertionFailure = value;
-            g_settings.opts().handleExceptionBreakpoint = value;
-            g_settings.opts().handleExceptionGuardPageViolation = value;
-            g_settings.opts().handleExceptionWx86Breakpoint = value;
-            break;
-        }
-
-        case IDC_PROTECTDRX:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto state = IsDlgButtonChecked(hDlg, IDC_PROTECTDRX);
-            CheckDlgButton(hDlg, IDC_NTGETCONTEXTTHREAD, state);
-            CheckDlgButton(hDlg, IDC_NTSETCONTEXTTHREAD, state);
-            CheckDlgButton(hDlg, IDC_NTCONTINUE, state);
-            CheckDlgButton(hDlg, IDC_KIUED, state);
-            break;
-        }
-
-        case IDC_NTGETCONTEXTTHREAD:
-        case IDC_NTSETCONTEXTTHREAD:
-        case IDC_NTCONTINUE:
-        case IDC_KIUED:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto checked = IsDlgButtonChecked(hDlg, IDC_NTGETCONTEXTTHREAD)
-                || IsDlgButtonChecked(hDlg, IDC_NTSETCONTEXTTHREAD)
-                || IsDlgButtonChecked(hDlg, IDC_NTCONTINUE)
-                || IsDlgButtonChecked(hDlg, IDC_KIUED);
-
-            CheckDlgButton(hDlg, IDC_PROTECTDRX, checked);
-            break;
-        }
-
-        case IDC_PEB:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto state = IsDlgButtonChecked(hDlg, IDC_PEB);
-            CheckDlgButton(hDlg, IDC_PEBBEINGDEBUGGED, state);
-            CheckDlgButton(hDlg, IDC_PEBHEAPFLAGS, state);
-            CheckDlgButton(hDlg, IDC_PEBNTGLOBALFLAG, state);
-            CheckDlgButton(hDlg, IDC_PEBSTARTUPINFO, state);
-            CheckDlgButton(hDlg, IDC_PEBOSBUILDNUMBER, state);
-            break;
-        }
-
-        case IDC_PEBBEINGDEBUGGED:
-        case IDC_PEBHEAPFLAGS:
-        case IDC_PEBNTGLOBALFLAG:
-        case IDC_PEBSTARTUPINFO:
-        case IDC_PEBOSBUILDNUMBER:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto checked = IsDlgButtonChecked(hDlg, IDC_PEBBEINGDEBUGGED)
-                || IsDlgButtonChecked(hDlg, IDC_PEBHEAPFLAGS)
-                || IsDlgButtonChecked(hDlg, IDC_PEBNTGLOBALFLAG)
-                || IsDlgButtonChecked(hDlg, IDC_PEBSTARTUPINFO)
-                || IsDlgButtonChecked(hDlg, IDC_PEBOSBUILDNUMBER);
-
-            CheckDlgButton(hDlg, IDC_PEB, checked);
-            break;
-        }
-
-#ifdef OLLY1
-        case IDC_COMPRESSED:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto checked = (IsDlgButtonChecked(hDlg, IDC_COMPRESSED) == BST_CHECKED);
-
-            EnableWindow(GetDlgItem(hDlg, IDC_COMPRESSEDANALYZE), checked);
-            EnableWindow(GetDlgItem(hDlg, IDC_COMPRESSEDNOTHING), checked);
-
-            if (!checked) {
-                CheckDlgButton(hDlg, IDC_COMPRESSEDANALYZE, BST_UNCHECKED);
-                CheckDlgButton(hDlg, IDC_COMPRESSEDNOTHING, BST_UNCHECKED);
-            }
-            break;
-        }
-
-        case IDC_LOADDLL:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            auto checked = (IsDlgButtonChecked(hDlg, IDC_LOADDLL) == BST_CHECKED);
-
-            EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLLOAD), checked);
-            EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLNOTHING), checked);
-
-            if (!checked) {
-                CheckDlgButton(hDlg, IDC_LOADDLLLOAD, BST_UNCHECKED);
-                CheckDlgButton(hDlg, IDC_LOADDLLNOTHING, BST_UNCHECKED);
-            }
-            break;
-        }
-#endif
-
-#ifdef __IDP__
-        case IDC_DLLNORMAL:
-        case IDC_DLLSTEALTH:
-        case IDC_DLLUNLOAD:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            //DLL injection options need to be updated on-the-fly coz the injection button is ON the options window
-            g_settings.opts().dllStealth = (IsDlgButtonChecked(hDlg, IDC_DLLSTEALTH) == BST_CHECKED);
-            g_settings.opts().dllNormal = (IsDlgButtonChecked(hDlg, IDC_DLLNORMAL) == BST_CHECKED);
-            g_settings.opts().dllUnload = (IsDlgButtonChecked(hDlg, IDC_DLLUNLOAD) == BST_CHECKED);
-            break;
-        }
-
-        case IDC_INJECTDLL:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
-
-            if (ProcessId)
+            switch (LOWORD(wParam))
             {
-                if (scl::GetFileDialogW(DllPathForInjection, _countof(DllPathForInjection)))
+                case IDC_PROFILES:
                 {
-                    if (dbg->is_remote())
+                    if (HIWORD(wParam) != CBN_SELCHANGE)
+                        break;
+
+                    auto profileIdx = (int)SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_GETCURSEL, 0, 0);
+                    g_settings.SetProfile(g_settings.profile_names()[profileIdx].c_str());
+
+                    // update options title
+                    auto wstrTitle = scl::fmtw(L"[ScyllaHide Options] Profile: %s", g_settings.profile_name().c_str());
+                    SetWindowTextW(hDlg, wstrTitle.c_str());
+
+                    UpdateOptions(hDlg, &g_settings);
+                    break;
+                }
+
+                case IDC_SAVEPROFILE:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    std::wstring wstrNewProfileName;
+
+        #ifdef OLLY1
+                    std::string strNewProfileName;
+                    strNewProfileName.resize(MAX_PATH);
+                    if (_Gettext("New profile name?", &strNewProfileName[0], 0, 0, 0) <= 0)
+                        break;
+                    wstrNewProfileName = scl::wstr_conv().from_bytes(strNewProfileName.c_str());
+
+        #elif defined(OLLY2)
+                    wstrNewProfileName.resize(MAX_PATH);
+                    if (Getstring(hDlg, L"New profile name?", &wstrNewProfileName[0], wstrNewProfileName.size(), 0, 0, 0, 0, 0, 0) <= 0)
+                        break;
+                    wstrNewProfileName.resize(lstrlenW(wstrNewProfileName.c_str()));
+
+        #elif defined(__IDP__)
+                    qstring NewProfileName;
+                    if (!ask_str(&NewProfileName, 0, "New profile name?"))
+                        break;
+                    wstrNewProfileName = scl::wstr_conv().from_bytes(NewProfileName.c_str());
+
+        #elif defined(X64DBG)
+                    std::string strNewProfileName;
+                    strNewProfileName.resize(GUI_MAX_LINE_SIZE);
+                    if (!GuiGetLineWindow("New profile name?", &strNewProfileName[0]))
+                        break;
+                    wstrNewProfileName = scl::wstr_conv().from_bytes(strNewProfileName.c_str());
+        #endif
+
+                    if (!g_settings.AddProfile(wstrNewProfileName.c_str()))
+                        break;
+                    g_settings.SetProfile(wstrNewProfileName.c_str());
+
+                    auto wstrTitle = scl::fmtw(L"[ScyllaHide Options] Profile: %s", g_settings.profile_name().c_str());
+                    SetWindowTextW(hDlg, wstrTitle.c_str());
+
+                    SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_ADDSTRING, 0, (LPARAM)wstrNewProfileName.c_str());
+                    auto profileCount = (int)SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_GETCOUNT, 0, 0);
+                    SendDlgItemMessageW(hDlg, IDC_PROFILES, CB_SETCURSEL, profileCount - 1, 0);
+
+                    UpdateOptions(hDlg, &g_settings);
+                    break;
+                }
+
+                case IDOK:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    SaveOptions(hDlg, &g_settings);
+
+                    if (ProcessId)
                     {
-                        SendInjectToServer(ProcessId);
+        #ifdef __IDP__
+        #ifndef __EA64__
+                        startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
+        #endif
+        #else
+                        startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
+        #endif
+                        bHooked = true;
+                        MessageBoxW(hDlg, L"Applied changes! Restarting target is NOT necessary!", L"[ScyllaHide Options]", MB_ICONINFORMATION);
                     }
                     else
                     {
-#ifndef BUILD_IDA_64BIT
-                        injectDll(ProcessId, DllPathForInjection);
-#endif
+                        MessageBoxW(hDlg, L"Please start the target to apply changes!", L"[ScyllaHide Options]", MB_ICONINFORMATION);
                     }
 
+                    EndDialog(hDlg, NULL);
+                    break;
                 }
-            }
-            break;
-        }
 
-        case IDC_ATTACH:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
-                break;
+                case IDC_APPLY:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
 
-            EndDialog(hDlg, NULL);
-            DialogBoxW(hinst, MAKEINTRESOURCE(IDD_ATTACH), (HWND)callui(ui_get_hwnd).vptr, &AttachProc);
-            break;
-        }
+                    SaveOptions(hDlg, &g_settings);
+                    break;
+                }
+
+                case IDC_EXCEPTION_ALL:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto value = (IsDlgButtonChecked(hDlg, IDC_EXCEPTION_ALL) == BST_CHECKED);
+                    g_settings.opts().handleExceptionPrint = value;
+                    g_settings.opts().handleExceptionIllegalInstruction = value;
+                    g_settings.opts().handleExceptionInvalidLockSequence = value;
+                    g_settings.opts().handleExceptionNoncontinuableException = value;
+                    g_settings.opts().handleExceptionRip = value;
+                    g_settings.opts().handleExceptionAssertionFailure = value;
+                    g_settings.opts().handleExceptionBreakpoint = value;
+                    g_settings.opts().handleExceptionGuardPageViolation = value;
+                    g_settings.opts().handleExceptionWx86Breakpoint = value;
+                    break;
+                }
+
+                case IDC_PROTECTDRX:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto state = IsDlgButtonChecked(hDlg, IDC_PROTECTDRX);
+                    CheckDlgButton(hDlg, IDC_NTGETCONTEXTTHREAD, state);
+                    CheckDlgButton(hDlg, IDC_NTSETCONTEXTTHREAD, state);
+                    CheckDlgButton(hDlg, IDC_NTCONTINUE, state);
+                    CheckDlgButton(hDlg, IDC_KIUED, state);
+                    break;
+                }
+
+                case IDC_NTGETCONTEXTTHREAD:
+                case IDC_NTSETCONTEXTTHREAD:
+                case IDC_NTCONTINUE:
+                case IDC_KIUED:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto checked = IsDlgButtonChecked(hDlg, IDC_NTGETCONTEXTTHREAD)
+                        || IsDlgButtonChecked(hDlg, IDC_NTSETCONTEXTTHREAD)
+                        || IsDlgButtonChecked(hDlg, IDC_NTCONTINUE)
+                        || IsDlgButtonChecked(hDlg, IDC_KIUED);
+
+                    CheckDlgButton(hDlg, IDC_PROTECTDRX, checked);
+                    break;
+                }
+
+                case IDC_PEB:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto state = IsDlgButtonChecked(hDlg, IDC_PEB);
+                    CheckDlgButton(hDlg, IDC_PEBBEINGDEBUGGED, state);
+                    CheckDlgButton(hDlg, IDC_PEBHEAPFLAGS, state);
+                    CheckDlgButton(hDlg, IDC_PEBNTGLOBALFLAG, state);
+                    CheckDlgButton(hDlg, IDC_PEBSTARTUPINFO, state);
+                    CheckDlgButton(hDlg, IDC_PEBOSBUILDNUMBER, state);
+                    break;
+                }
+
+                case IDC_PEBBEINGDEBUGGED:
+                case IDC_PEBHEAPFLAGS:
+                case IDC_PEBNTGLOBALFLAG:
+                case IDC_PEBSTARTUPINFO:
+                case IDC_PEBOSBUILDNUMBER:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto checked = IsDlgButtonChecked(hDlg, IDC_PEBBEINGDEBUGGED)
+                        || IsDlgButtonChecked(hDlg, IDC_PEBHEAPFLAGS)
+                        || IsDlgButtonChecked(hDlg, IDC_PEBNTGLOBALFLAG)
+                        || IsDlgButtonChecked(hDlg, IDC_PEBSTARTUPINFO)
+                        || IsDlgButtonChecked(hDlg, IDC_PEBOSBUILDNUMBER);
+
+                    CheckDlgButton(hDlg, IDC_PEB, checked);
+                    break;
+                }
+
+        #ifdef OLLY1
+                case IDC_COMPRESSED:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto checked = (IsDlgButtonChecked(hDlg, IDC_COMPRESSED) == BST_CHECKED);
+
+                    EnableWindow(GetDlgItem(hDlg, IDC_COMPRESSEDANALYZE), checked);
+                    EnableWindow(GetDlgItem(hDlg, IDC_COMPRESSEDNOTHING), checked);
+
+                    if (!checked) {
+                        CheckDlgButton(hDlg, IDC_COMPRESSEDANALYZE, BST_UNCHECKED);
+                        CheckDlgButton(hDlg, IDC_COMPRESSEDNOTHING, BST_UNCHECKED);
+                    }
+                    break;
+                }
+
+                case IDC_LOADDLL:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    auto checked = (IsDlgButtonChecked(hDlg, IDC_LOADDLL) == BST_CHECKED);
+
+                    EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLLOAD), checked);
+                    EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLNOTHING), checked);
+
+                    if (!checked) {
+                        CheckDlgButton(hDlg, IDC_LOADDLLLOAD, BST_UNCHECKED);
+                        CheckDlgButton(hDlg, IDC_LOADDLLNOTHING, BST_UNCHECKED);
+                    }
+                    break;
+                }
+        #endif
+
+        #ifdef __IDP__
+                case IDC_DLLNORMAL:
+                case IDC_DLLSTEALTH:
+                case IDC_DLLUNLOAD:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    //DLL injection options need to be updated on-the-fly coz the injection button is ON the options window
+                    g_settings.opts().dllStealth = (IsDlgButtonChecked(hDlg, IDC_DLLSTEALTH) == BST_CHECKED);
+                    g_settings.opts().dllNormal = (IsDlgButtonChecked(hDlg, IDC_DLLNORMAL) == BST_CHECKED);
+                    g_settings.opts().dllUnload = (IsDlgButtonChecked(hDlg, IDC_DLLUNLOAD) == BST_CHECKED);
+                    break;
+                }
+
+                case IDC_INJECTDLL:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    if (ProcessId)
+                    {
+                        if (scl::GetFileDialogW(DllPathForInjection, _countof(DllPathForInjection)))
+                        {
+                            if (dbg->is_remote())
+                            {
+                                SendInjectToServer(ProcessId);
+                            }
+                            else
+                            {
+        #ifndef __EA64__
+                                injectDll(ProcessId, DllPathForInjection);
+        #endif
+                            }
+
+                        }
+                    }
+                    break;
+                }
+
+                case IDC_ATTACH:
+                {
+                    if (HIWORD(wParam) != BN_CLICKED)
+                        break;
+
+                    EndDialog(hDlg, NULL);
+                    DialogBoxW(hinst, MAKEINTRESOURCE(IDD_ATTACH), GetForegroundWindow(), &AttachProc);
+                    break;
+                }
 
         case IDC_ABOUT:
         {
             if (HIWORD(wParam) != BN_CLICKED)
                 break;
 
-            scl::ShowAboutBox((HWND)callui(ui_get_hwnd).vptr);
+            scl::ShowAboutBox(GetForegroundWindow());
             break;
         }
 #endif
@@ -1002,9 +1002,12 @@ LRESULT CALLBACK ExceptionSettingsWndproc(HWND hwnd, UINT msg, WPARAM wparam, LP
             SendMessageW(hwndTT, TTM_ADDTOOL, 0, (LPARAM)&ti);
         }
 
-        if (g_settings.opts().handleExceptionPrint) CheckDlgButton(hwnd, ID_EXCEPTION_PRINT, BST_CHECKED);
-        if (g_settings.opts().handleExceptionIllegalInstruction) CheckDlgButton(hwnd, ID_EXCEPTION_Illegal, BST_CHECKED);
-        if (g_settings.opts().handleExceptionInvalidLockSequence) CheckDlgButton(hwnd, ID_EXCEPTION_InvalidLockSequence, BST_CHECKED);
+        if (g_settings.opts().handleExceptionPrint)
+            CheckDlgButton(hwnd, ID_EXCEPTION_PRINT, BST_CHECKED);
+        if (g_settings.opts().handleExceptionIllegalInstruction)
+            CheckDlgButton(hwnd, ID_EXCEPTION_Illegal, BST_CHECKED);
+        if (g_settings.opts().handleExceptionInvalidLockSequence)
+            CheckDlgButton(hwnd, ID_EXCEPTION_InvalidLockSequence, BST_CHECKED);
         if (g_settings.opts().handleExceptionNoncontinuableException) CheckDlgButton(hwnd, ID_EXCEPTION_Noncontinable, BST_CHECKED);
         if (g_settings.opts().handleExceptionAssertionFailure) CheckDlgButton(hwnd, ID_EXCEPTION_AssertionFailure, BST_CHECKED);
         if (g_settings.opts().handleExceptionBreakpoint) CheckDlgButton(hwnd, ID_EXCEPTION_Breakpoint, BST_CHECKED);

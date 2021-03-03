@@ -19,13 +19,15 @@ typedef DWORD(WINAPI * t_OutputDebugStringW)(LPCWSTR lpOutputString); //Kernel32
 #define MAX_NATIVE_HOOKS 32
 
 #pragma pack(push, 1)
-typedef struct _HOOK_NATIVE_CALL32 {
+typedef struct _HOOK_NATIVE_CALL32
+{
     DWORD eaxValue;
     DWORD ecxValue;
     PVOID hookedFunction;
 } HOOK_NATIVE_CALL32;
 
-typedef struct _HOOK_DLL_DATA {
+typedef struct _HOOK_DLL_DATA
+{
     HMODULE hDllImage;
 
     BOOLEAN EnablePebBeingDebugged;
@@ -173,4 +175,3 @@ typedef struct _HOOK_DLL_DATA {
 #define HOOK_ERROR_RESOLVE_IMPORT 1
 #define HOOK_ERROR_DLLMAIN 2
 #define HOOK_ERROR_PEHEADER 3
-
