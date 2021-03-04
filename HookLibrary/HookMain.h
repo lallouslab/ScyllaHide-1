@@ -4,29 +4,29 @@
 
 typedef BOOL(WINAPI * t_DllMain)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
-typedef void  (WINAPI * t_GetSystemTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
-typedef void  (WINAPI * t_GetLocalTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
-typedef DWORD(WINAPI * t_timeGetTime)(void); //Winmm.dll -> sometimes GetTickCount
-typedef DWORD(WINAPI * t_GetTickCount)(void); //Kernel32.dll / kernelbase
-typedef ULONGLONG(WINAPI * t_GetTickCount64)(void);
-typedef BOOL(WINAPI * t_QueryPerformanceCounter)(LARGE_INTEGER *lpPerformanceCount); //Kernel32.dll -> ntdll.RtlQueryPerformanceCounter -> NO NATIVE CALL
-typedef BOOL(WINAPI * t_QueryPerformanceFrequency)(LARGE_INTEGER *lpFrequency); //kernel32.dll -> ntdll.RtlQueryPerformanceFrequency -> ntdll.ZwQueryPerformanceCounter
+typedef void (WINAPI *t_GetSystemTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
+typedef void (WINAPI *t_GetLocalTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
+typedef DWORD (WINAPI *t_timeGetTime)(void); //Winmm.dll -> sometimes GetTickCount
+typedef DWORD (WINAPI *t_GetTickCount)(void); //Kernel32.dll / kernelbase
+typedef ULONGLONG (WINAPI *t_GetTickCount64)(void);
+typedef BOOL (WINAPI *t_QueryPerformanceCounter)(LARGE_INTEGER *lpPerformanceCount); //Kernel32.dll -> ntdll.RtlQueryPerformanceCounter -> NO NATIVE CALL
+typedef BOOL (WINAPI *t_QueryPerformanceFrequency)(LARGE_INTEGER *lpFrequency); //kernel32.dll -> ntdll.RtlQueryPerformanceFrequency -> ntdll.ZwQueryPerformanceCounter
 
-typedef DWORD(WINAPI * t_OutputDebugStringA)(LPCSTR lpOutputString); //Kernel32.dll
-typedef DWORD(WINAPI * t_OutputDebugStringW)(LPCWSTR lpOutputString); //Kernel32.dll
+typedef DWORD (WINAPI *t_OutputDebugStringA)(LPCSTR lpOutputString); //Kernel32.dll
+typedef DWORD (WINAPI *t_OutputDebugStringW)(LPCWSTR lpOutputString); //Kernel32.dll
 //WIN 7 X64: OutputDebugStringW -> OutputDebugStringA
 
 #define MAX_NATIVE_HOOKS 32
 
 #pragma pack(push, 1)
-typedef struct _HOOK_NATIVE_CALL32
+struct HOOK_NATIVE_CALL32
 {
     DWORD eaxValue;
     DWORD ecxValue;
     PVOID hookedFunction;
-} HOOK_NATIVE_CALL32;
+};
 
-typedef struct _HOOK_DLL_DATA
+struct HOOK_DLL_DATA
 {
     HMODULE hDllImage;
 
@@ -168,7 +168,7 @@ typedef struct _HOOK_DLL_DATA
     HOOK_NATIVE_CALL32 HookNative[MAX_NATIVE_HOOKS];
     PVOID NativeCallContinue;
 #endif
-} HOOK_DLL_DATA;
+};
 #pragma pack(pop)
 
 #define HOOK_ERROR_SUCCESS 0

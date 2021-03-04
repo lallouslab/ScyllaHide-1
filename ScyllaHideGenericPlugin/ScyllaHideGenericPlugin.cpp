@@ -40,11 +40,13 @@ HOOK_DLL_DATA g_hdd;
 static HMODULE hNtdllModule = 0;
 static std::unordered_map<DWORD, HookStatus> hookStatusMap;
 
+//----------------------------------------------------------------------------------
 static void LogCallback(const wchar_t *msg)
 {
     _putws(msg);
 }
 
+//----------------------------------------------------------------------------------
 DLL_EXPORT void ScyllaHideDebugLoop(const DEBUG_EVENT* DebugEvent)
 {
     auto pid = DebugEvent->dwProcessId;
@@ -72,36 +74,34 @@ DLL_EXPORT void ScyllaHideDebugLoop(const DEBUG_EVENT* DebugEvent)
 
     switch (DebugEvent->dwDebugEventCode)
     {
-    case CREATE_PROCESS_DEBUG_EVENT:
-    {
-        status.ProcessId = DebugEvent->dwProcessId;
-        status.bHooked = false;
-        ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
-
-        if (DebugEvent->u.CreateProcessInfo.lpStartAddress == NULL)
+        case CREATE_PROCESS_DEBUG_EVENT:
         {
-            //ATTACH
-            if (g_settings.opts().killAntiAttach)
+            status.ProcessId = DebugEvent->dwProcessId;
+            status.bHooked = false;
+            ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
+
+            if (DebugEvent->u.CreateProcessInfo.lpStartAddress == NULL)
             {
-                if (!ApplyAntiAntiAttach(status.ProcessId))
+                //ATTACH
+                if (g_settings.opts().killAntiAttach)
                 {
-                    g_log.LogError(L"Anti-Anti-Attach failed");
+                    if (!ApplyAntiAntiAttach(status.ProcessId))
+                    {
+                        g_log.LogError(L"Anti-Anti-Attach failed");
+                    }
                 }
             }
+
+            break;
         }
 
-        break;
-    }
-
-    case LOAD_DLL_DEBUG_EVENT:
-    {
-        if (status.bHooked)
+        case LOAD_DLL_DEBUG_EVENT:
         {
-            startInjection(status.ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), false);
-        }
+            if (status.bHooked)
+                startInjection(status.ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), false);
 
-        break;
-    }
+            break;
+        }
 
     case EXCEPTION_DEBUG_EVENT:
     {

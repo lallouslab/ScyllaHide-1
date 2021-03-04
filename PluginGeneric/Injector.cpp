@@ -44,14 +44,14 @@ void ReadNtApiInformation(HOOK_DLL_DATA *hdd)
         return;
     }
 
-    hdd->NtUserBlockInputVA = user32Loader.GetUserSyscallVa("NtUserBlockInput");
-    hdd->NtUserQueryWindowVA = user32Loader.GetUserSyscallVa("NtUserQueryWindow");
-    hdd->NtUserGetForegroundWindowVA = user32Loader.GetUserSyscallVa("NtUserGetForegroundWindow");
-    hdd->NtUserBuildHwndListVA = user32Loader.GetUserSyscallVa("NtUserBuildHwndList");
-    hdd->NtUserFindWindowExVA = user32Loader.GetUserSyscallVa("NtUserFindWindowEx");
-    hdd->NtUserGetClassNameVA = user32Loader.GetUserSyscallVa("NtUserGetClassName");
-    hdd->NtUserInternalGetWindowTextVA = user32Loader.GetUserSyscallVa("NtUserInternalGetWindowText");
-    hdd->NtUserGetThreadStateVA = user32Loader.GetUserSyscallVa("NtUserGetThreadState");
+    hdd->NtUserBlockInputVA             = user32Loader.GetUserSyscallVa("NtUserBlockInput");
+    hdd->NtUserQueryWindowVA            = user32Loader.GetUserSyscallVa("NtUserQueryWindow");
+    hdd->NtUserGetForegroundWindowVA    = user32Loader.GetUserSyscallVa("NtUserGetForegroundWindow");
+    hdd->NtUserBuildHwndListVA          = user32Loader.GetUserSyscallVa("NtUserBuildHwndList");
+    hdd->NtUserFindWindowExVA           = user32Loader.GetUserSyscallVa("NtUserFindWindowEx");
+    hdd->NtUserGetClassNameVA           = user32Loader.GetUserSyscallVa("NtUserGetClassName");
+    hdd->NtUserInternalGetWindowTextVA  = user32Loader.GetUserSyscallVa("NtUserInternalGetWindowText");
+    hdd->NtUserGetThreadStateVA         = user32Loader.GetUserSyscallVa("NtUserGetThreadState");
 
     g_log.LogInfo(L"Loaded VA for NtUserBlockInput = 0x%p", hdd->NtUserBlockInputVA);
     g_log.LogInfo(L"Loaded VA for NtUserQueryWindow = 0x%p", hdd->NtUserQueryWindowVA);
@@ -94,6 +94,7 @@ void __declspec(naked) handleAntiAttach()
 }
 #endif
 
+//----------------------------------------------------------------------------------
 void InstallAntiAttachHook()
 {
 #ifndef _WIN64
@@ -124,6 +125,7 @@ void InstallAntiAttachHook()
 #endif
 }
 
+//----------------------------------------------------------------------------------
 bool StartFixBeingDebugged(DWORD targetPid, bool setToNull)
 {
     scl::Handle hProcess(OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, 0, targetPid));
@@ -152,19 +154,28 @@ bool StartFixBeingDebugged(DWORD targetPid, bool setToNull)
     return true;
 }
 
+//----------------------------------------------------------------------------------
 static bool GetProcessInfo(HANDLE hProcess, PPROCESS_SUSPEND_INFO processInfo)
 {
     PROCESS_BASIC_INFORMATION basicInfo = { 0 };
-    NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &basicInfo, sizeof(basicInfo), nullptr);
+    NTSTATUS status = NtQueryInformationProcess(
+        hProcess,
+        ProcessBasicInformation,
+        &basicInfo,
+        sizeof(basicInfo),
+        nullptr);
     if (!NT_SUCCESS(status))
         return false;
+
     ULONG size;
     status = NtQuerySystemInformation(SystemProcessInformation, nullptr, 0, &size);
     if (status != STATUS_INFO_LENGTH_MISMATCH)
         return false;
+
     const PSYSTEM_PROCESS_INFORMATION systemProcessInfo = (PSYSTEM_PROCESS_INFORMATION)RtlAllocateHeap(RtlProcessHeap(), HEAP_ZERO_MEMORY, 2 * size);
     if (systemProcessInfo == nullptr)
         return false;
+
     status = NtQuerySystemInformation(SystemProcessInformation, systemProcessInfo, 2 * size, nullptr);
     if (!NT_SUCCESS(status))
     {
@@ -183,6 +194,7 @@ static bool GetProcessInfo(HANDLE hProcess, PPROCESS_SUSPEND_INFO processInfo)
             numThreads = entry->NumberOfThreads;
             break;
         }
+
         if (entry->NextEntryOffset == 0)
             break;
         entry = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)entry + entry->NextEntryOffset);
@@ -202,14 +214,13 @@ static bool GetProcessInfo(HANDLE hProcess, PPROCESS_SUSPEND_INFO processInfo)
     // Fill thread IDs
     processInfo->ThreadSuspendInfo = (PTHREAD_SUSPEND_INFO)RtlAllocateHeap(RtlProcessHeap(), HEAP_ZERO_MEMORY, numThreads * sizeof(THREAD_SUSPEND_INFO));
     for (ULONG i = 0; i < numThreads; ++i)
-    {
         processInfo->ThreadSuspendInfo[i].ThreadId = entry->Threads[i].ClientId.UniqueThread;
-    }
 
     RtlFreeHeap(RtlProcessHeap(), 0, systemProcessInfo);
     return true;
 }
 
+//----------------------------------------------------------------------------------
 // NtSuspendProcess does not return STATUS_SUSPEND_COUNT_EXCEEDED (or any other error) when one or more thread(s) in the process is/are at the suspend limit.
 // This replacement suspends all threads in a process, storing the individual thread suspend statuses. True is returned iff all threads are suspended.
 bool SafeSuspendProcess(HANDLE hProcess, PPROCESS_SUSPEND_INFO suspendInfo)
@@ -244,6 +255,7 @@ bool SafeSuspendProcess(HANDLE hProcess, PPROCESS_SUSPEND_INFO suspendInfo)
     return true;
 }
 
+//----------------------------------------------------------------------------------
 // Replacement for NtResumeProcess, to be used with info obtained from a prior call to SafeSuspendProcess
 bool SafeResumeProcess(PPROCESS_SUSPEND_INFO suspendInfo)
 {
@@ -331,8 +343,8 @@ void startInjectionProcess(
             {
                 FillHookDllData(hProcess, hdd);
 
-                if (StartHooking(hProcess, hdd, dllMemory, (DWORD_PTR)remoteImageBase) &&
-                    WriteProcessMemory(hProcess, (LPVOID)((DWORD_PTR)hookDllDataAddressRva + (DWORD_PTR)remoteImageBase), hdd, sizeof(HOOK_DLL_DATA), 0))
+                if (     StartHooking(hProcess, hdd, dllMemory, (DWORD_PTR)remoteImageBase)
+                      && WriteProcessMemory(hProcess, (LPVOID)((DWORD_PTR)hookDllDataAddressRva + (DWORD_PTR)remoteImageBase), hdd, sizeof(HOOK_DLL_DATA), 0))
                 {
                     g_log.LogInfo(L"Hook injection successful, image base %p", remoteImageBase);
                 }
@@ -356,14 +368,18 @@ void startInjectionProcess(
     SafeResumeProcess(&suspendInfo);
 }
 
-void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR * dllPath, bool newProcess)
+//----------------------------------------------------------------------------------
+void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR *dllPath, bool newProcess)
 {
-    HANDLE hProcess = OpenProcess( PROCESS_SUSPEND_RESUME | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION,
-        0, targetPid);
-    if (hProcess)
+    HANDLE hProcess = OpenProcess(
+        PROCESS_SUSPEND_RESUME | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION,
+        0,
+        targetPid);
+
+    if (hProcess != NULL)
     {
         BYTE * dllMemory = ReadFileToMemory(dllPath);
-        if (dllMemory)
+        if (dllMemory != nullptr)
         {
             startInjectionProcess(hProcess, hdd, dllMemory, newProcess);
             free(dllMemory);
@@ -381,7 +397,13 @@ void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR * dllPath, 
     }
 }
 
-NTSTATUS CreateAndWaitForThread(HANDLE hProcess, LPTHREAD_START_ROUTINE threadStart, PVOID parameter, PHANDLE threadHandle, BOOLEAN suppressDllMains)
+//----------------------------------------------------------------------------------
+NTSTATUS CreateAndWaitForThread(
+    HANDLE hProcess,
+    LPTHREAD_START_ROUTINE threadStart,
+    PVOID parameter,
+    PHANDLE threadHandle,
+    BOOLEAN suppressDllMains)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     const t_NtCreateThreadEx fpNtCreateThreadEx = (t_NtCreateThreadEx)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtCreateThreadEx");
@@ -421,6 +443,7 @@ NTSTATUS CreateAndWaitForThread(HANDLE hProcess, LPTHREAD_START_ROUTINE threadSt
     return status;
 }
 
+//----------------------------------------------------------------------------------
 LPVOID NormalDllInjection(HANDLE hProcess, const WCHAR * dllPath)
 {
     SIZE_T memorySize = (wcslen(dllPath) + 1) * sizeof(WCHAR);
@@ -443,9 +466,7 @@ LPVOID NormalDllInjection(HANDLE hProcess, const WCHAR * dllPath)
             GetExitCodeThread(hThread, (LPDWORD)&hModule);
 
             if (!hModule)
-            {
                 g_log.LogError(L"DLL INJECTION: Failed load library!");
-            }
 
             CloseHandle(hThread);
         }
@@ -464,12 +485,14 @@ LPVOID NormalDllInjection(HANDLE hProcess, const WCHAR * dllPath)
     return hModule;
 }
 
+//----------------------------------------------------------------------------------
 DWORD GetAddressOfEntryPoint(BYTE * dllMemory)
 {
     PIMAGE_NT_HEADERS ntHeaders = RtlImageNtHeader(dllMemory);
     return HEADER_FIELD(ntHeaders, AddressOfEntryPoint);
 }
 
+//----------------------------------------------------------------------------------
 LPVOID StealthDllInjection(HANDLE hProcess, const WCHAR * dllPath, BYTE * dllMemory)
 {
     LPVOID remoteImageBaseOfInjectedDll = 0;
@@ -505,7 +528,8 @@ LPVOID StealthDllInjection(HANDLE hProcess, const WCHAR * dllPath, BYTE * dllMem
     return remoteImageBaseOfInjectedDll;
 }
 
-void injectDll(DWORD targetPid, const WCHAR * dllPath)
+//----------------------------------------------------------------------------------
+void injectDll(DWORD targetPid, const WCHAR *dllPath)
 {
     HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, 0, targetPid);
     if (hProcess == nullptr)
@@ -514,7 +538,7 @@ void injectDll(DWORD targetPid, const WCHAR * dllPath)
         return;
     }
 
-    BYTE* dllMemory = ReadFileToMemory(dllPath);
+    BYTE *dllMemory = ReadFileToMemory(dllPath);
     if (dllMemory == nullptr)
     {
         g_log.LogError(L"DLL INJECTION: Failed to read file %s!", dllPath);
@@ -598,7 +622,8 @@ void injectDll(DWORD targetPid, const WCHAR * dllPath)
     CloseHandle(hProcess);
 }
 
-BYTE * ReadFileToMemory(const WCHAR * targetFilePath)
+//----------------------------------------------------------------------------------
+BYTE *ReadFileToMemory(const WCHAR * targetFilePath)
 {
     HANDLE hFile;
     DWORD dwBytesRead;

@@ -43,6 +43,7 @@ static void LogCallback(const wchar_t *msg)
     _putws(msg);
 }
 
+//----------------------------------------------------------------------------------
 int wmain(int argc, wchar_t* argv[])
 {
     DWORD targetPid = 0;
@@ -118,6 +119,7 @@ int wmain(int argc, wchar_t* argv[])
     return 0;
 }
 
+//----------------------------------------------------------------------------------
 static bool StartHooking(HANDLE hProcess, BYTE * dllMemory, DWORD_PTR imageBase)
 {
     g_hdd.dwProtectedProcessId = 0;
@@ -192,6 +194,7 @@ bool startInjectionProcess(HANDLE hProcess, BYTE * dllMemory)
     return success;
 }
 
+//----------------------------------------------------------------------------------
 bool startInjection(DWORD targetPid, const WCHAR * dllPath)
 {
     bool result = false;
