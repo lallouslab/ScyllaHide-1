@@ -481,13 +481,13 @@ DWORD GetExplorerProcessId()
 	if (dwExplorerPid == 0)
 	{
 		UNICODE_STRING explorerName = RTL_CONSTANT_STRING(L"explorer.exe");
-		dwExplorerPid = GetProcessIdByName(&explorerName);
+		dwExplorerPid = NtGetProcessIdByName(&explorerName);
 	}
 	return dwExplorerPid;
 }
 
 //----------------------------------------------------------------------------------
-DWORD GetProcessIdByName(PUNICODE_STRING processName)
+DWORD NtGetProcessIdByName(PUNICODE_STRING processName)
 {
 	ULONG size;
 	if (NtQuerySystemInformation(SystemProcessInformation, nullptr, 0, &size) != STATUS_INFO_LENGTH_MISMATCH)

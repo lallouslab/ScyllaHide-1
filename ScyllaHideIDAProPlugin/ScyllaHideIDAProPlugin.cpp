@@ -29,7 +29,7 @@ typedef void(__cdecl * t_AttachProcess)(DWORD dwPID);
 
 extern t_AttachProcess _AttachProcess;
 
-const WCHAR g_scyllaHideDllFilename[] = L"HookLibraryx86.dll";
+const WCHAR g_scyllaHideDllFilename[]       = L"HookLibraryx86.dll";
 const WCHAR g_scyllaHidex64ServerFilename[] = L"ScyllaHideIDAServerx64.exe";
 
 scl::Settings g_settings;

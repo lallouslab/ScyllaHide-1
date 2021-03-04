@@ -92,17 +92,19 @@ void WriteWow64Jumper(unsigned char * lpbTo, unsigned char * buf)
 #endif
 
 //----------------------------------------------------------------------------------
-void ClearSyscallBreakpoint(const char* funcName, unsigned char* funcBytes)
+void ClearSyscallBreakpoint(const char *funcName, unsigned char *funcBytes)
 {
     // Do nothing if this is not a syscall stub
-    if ((funcName == nullptr || funcName[0] == '\0') ||
-        (funcName[0] != 'N' || funcName[1] != 't') &&
-        (funcName[0] != 'Z' || funcName[1] != 'w'))
+    if (    (funcName == nullptr || funcName[0] == '\0') 
+	     || (funcName[0] != 'N' || funcName[1] != 't') 
+		 && (funcName[0] != 'Z' || funcName[1] != 'w'))
+    {
         return;
+    }
 
-    if (funcBytes[0] == 0xCC || // int 3
-        (funcBytes[0] == 0xCD && funcBytes[1] == 0x03) || // long int 3
-        (funcBytes[0] == 0xF0 && funcBytes[1] == 0x0B)) // UD2
+    if (    funcBytes[0] == 0xCC                            // int 3
+         || (funcBytes[0] == 0xCD && funcBytes[1] == 0x03)  // long int 3
+         || (funcBytes[0] == 0xF0 && funcBytes[1] == 0x0B)) // UD2
     {
 #ifdef _WIN64
         // x64 stubs always start with 'mov r10, rcx'
@@ -169,7 +171,9 @@ DWORD GetSysCallIndex32(const BYTE * data)
                 MessageBoxA(nullptr, "GetSysCallIndex32: Opcode is not I_MOV", "Distorm ERROR", MB_ICONERROR);
         }
         else
+        {
             MessageBoxA(nullptr, "GetSysCallIndex32: Distorm flags == FLAG_NOT_DECODABLE", "Distorm ERROR", MB_ICONERROR);
+        }
     }
     else
     {
@@ -660,8 +664,9 @@ void *DetourCreateRemote(
     // Note that this check will give a false negative in the case that a function is hooked *and* has a breakpoint set on it (now cleared).
     // We can clear the breakpoint or detect the hook, not both. (If the hook is ours, this is actually a hack because we should be properly unhooking)
 #ifdef _WIN64
-    const bool isHooked = (originalBytes[0] == 0xFF && originalBytes[1] == 0x25) ||
-        (originalBytes[0] == 0x90 && originalBytes[1] == 0xFF && originalBytes[2] == 0x25);
+    const bool isHooked =
+	        (originalBytes[0] == 0xFF && originalBytes[1] == 0x25)
+	    ||  (originalBytes[0] == 0x90 && originalBytes[1] == 0xFF && originalBytes[2] == 0x25);
 #else
     const bool isHooked = originalBytes[0] == 0xE9;
 #endif
@@ -681,8 +686,9 @@ void *DetourCreateRemote(
     {
         *backupSize = detourLen;
 
+        // TODO: ;! trampoline pool. No need to allocate a page per trampoline
         trampoline = (PBYTE)VirtualAllocEx(hProcess, 0, detourLen + minDetourLen, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-        if (!trampoline)
+        if (trampoline == nullptr)
             return 0;
 
         WriteProcessMemory(hProcess, trampoline, originalBytes, detourLen, 0);

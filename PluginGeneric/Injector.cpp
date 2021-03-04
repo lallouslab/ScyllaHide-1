@@ -223,7 +223,9 @@ static bool GetProcessInfo(HANDLE hProcess, PPROCESS_SUSPEND_INFO processInfo)
 //----------------------------------------------------------------------------------
 // NtSuspendProcess does not return STATUS_SUSPEND_COUNT_EXCEEDED (or any other error) when one or more thread(s) in the process is/are at the suspend limit.
 // This replacement suspends all threads in a process, storing the individual thread suspend statuses. True is returned iff all threads are suspended.
-bool SafeSuspendProcess(HANDLE hProcess, PPROCESS_SUSPEND_INFO suspendInfo)
+bool SafeSuspendProcess(
+    HANDLE hProcess,
+    PPROCESS_SUSPEND_INFO suspendInfo)
 {
     // Get process info
     if (!GetProcessInfo(hProcess, suspendInfo))
@@ -236,7 +238,12 @@ bool SafeSuspendProcess(HANDLE hProcess, PPROCESS_SUSPEND_INFO suspendInfo)
         CLIENT_ID clientId = { suspendInfo->ProcessId, suspendInfo->ThreadSuspendInfo[i].ThreadId };
 
         // Open the thread by thread ID
-        NTSTATUS status = NtOpenThread(&threadSuspendInfo->ThreadHandle, THREAD_SUSPEND_RESUME, &objectAttributes, &clientId);
+        NTSTATUS status = NtOpenThread(
+            &threadSuspendInfo->ThreadHandle,
+            THREAD_SUSPEND_RESUME,
+            &objectAttributes,
+            &clientId);
+
         if (!NT_SUCCESS(status))
         {
             RtlFreeHeap(RtlProcessHeap(), 0, suspendInfo->ThreadSuspendInfo);
@@ -637,14 +644,13 @@ BYTE *ReadFileToMemory(const WCHAR * targetFilePath)
         if (FileSize > 0)
         {
             FilePtr = (BYTE*)calloc(FileSize + 1, 1);
-            if (FilePtr)
+            if (FilePtr != nullptr)
             {
                 if (!ReadFile(hFile, (LPVOID)FilePtr, FileSize, &dwBytesRead, NULL))
                 {
                     free(FilePtr);
                     FilePtr = 0;
                 }
-
             }
         }
         CloseHandle(hFile);
@@ -653,47 +659,49 @@ BYTE *ReadFileToMemory(const WCHAR * targetFilePath)
     return FilePtr;
 }
 
+//----------------------------------------------------------------------------------
 void FillHookDllData(HANDLE hProcess, HOOK_DLL_DATA *hdd)
 {
-    hdd->EnablePebBeingDebugged = g_settings.opts().fixPebBeingDebugged;
-    hdd->EnablePebHeapFlags = g_settings.opts().fixPebHeapFlags;
-    hdd->EnablePebNtGlobalFlag = g_settings.opts().fixPebNtGlobalFlag;
-    hdd->EnablePebStartupInfo = g_settings.opts().fixPebStartupInfo;
-    hdd->EnablePebOsBuildNumber = g_settings.opts().fixPebOsBuildNumber;
-    hdd->EnableOutputDebugStringHook = g_settings.opts().hookOutputDebugStringA;
-    hdd->EnableNtSetInformationThreadHook = g_settings.opts().hookNtSetInformationThread;
-    hdd->EnableNtQueryInformationProcessHook = g_settings.opts().hookNtQueryInformationProcess;
-    hdd->EnableNtQuerySystemInformationHook = g_settings.opts().hookNtQuerySystemInformation;
-    hdd->EnableNtQueryObjectHook = g_settings.opts().hookNtQueryObject;
-    hdd->EnableNtYieldExecutionHook = g_settings.opts().hookNtYieldExecution;
-    hdd->EnableNtCloseHook = g_settings.opts().hookNtClose;
-    hdd->EnableNtCreateThreadExHook = g_settings.opts().hookNtCreateThreadEx;
-    hdd->EnablePreventThreadCreation = g_settings.opts().preventThreadCreation;
-    hdd->EnableNtUserBlockInputHook = g_settings.opts().hookNtUserBlockInput;
-    hdd->EnableNtUserFindWindowExHook = g_settings.opts().hookNtUserFindWindowEx;
-    hdd->EnableNtUserBuildHwndListHook = g_settings.opts().hookNtUserBuildHwndList;
-    hdd->EnableNtUserQueryWindowHook = g_settings.opts().hookNtUserQueryWindow;
-    hdd->EnableNtUserGetForegroundWindowHook = g_settings.opts().hookNtUserGetForegroundWindow;
-    hdd->EnableNtSetDebugFilterStateHook = g_settings.opts().hookNtSetDebugFilterState;
-    hdd->EnableGetTickCountHook = g_settings.opts().hookGetTickCount;
-    hdd->EnableGetTickCount64Hook = g_settings.opts().hookGetTickCount64;
-    hdd->EnableGetLocalTimeHook = g_settings.opts().hookGetLocalTime;
-    hdd->EnableGetSystemTimeHook = g_settings.opts().hookGetSystemTime;
-    hdd->EnableNtQuerySystemTimeHook = g_settings.opts().hookNtQuerySystemTime;
-    hdd->EnableNtQueryPerformanceCounterHook = g_settings.opts().hookNtQueryPerformanceCounter;
-    hdd->EnableNtSetInformationProcessHook = g_settings.opts().hookNtSetInformationProcess;
+    hdd->EnablePebBeingDebugged                 = g_settings.opts().fixPebBeingDebugged;
+    hdd->EnablePebHeapFlags                     = g_settings.opts().fixPebHeapFlags;
+    hdd->EnablePebNtGlobalFlag                  = g_settings.opts().fixPebNtGlobalFlag;
+    hdd->EnablePebStartupInfo                   = g_settings.opts().fixPebStartupInfo;
+    hdd->EnablePebOsBuildNumber                 = g_settings.opts().fixPebOsBuildNumber;
+    hdd->EnableOutputDebugStringHook            = g_settings.opts().hookOutputDebugStringA;
+    hdd->EnableNtSetInformationThreadHook       = g_settings.opts().hookNtSetInformationThread;
+    hdd->EnableNtQueryInformationProcessHook    = g_settings.opts().hookNtQueryInformationProcess;
+    hdd->EnableNtQuerySystemInformationHook     = g_settings.opts().hookNtQuerySystemInformation;
+    hdd->EnableNtQueryObjectHook                = g_settings.opts().hookNtQueryObject;
+    hdd->EnableNtYieldExecutionHook             = g_settings.opts().hookNtYieldExecution;
+    hdd->EnableNtCloseHook                      = g_settings.opts().hookNtClose;
+    hdd->EnableNtCreateThreadExHook             = g_settings.opts().hookNtCreateThreadEx;
+    hdd->EnablePreventThreadCreation            = g_settings.opts().preventThreadCreation;
+    hdd->EnableNtUserBlockInputHook             = g_settings.opts().hookNtUserBlockInput;
+    hdd->EnableNtUserFindWindowExHook           = g_settings.opts().hookNtUserFindWindowEx;
+    hdd->EnableNtUserBuildHwndListHook          = g_settings.opts().hookNtUserBuildHwndList;
+    hdd->EnableNtUserQueryWindowHook            = g_settings.opts().hookNtUserQueryWindow;
+    hdd->EnableNtUserGetForegroundWindowHook    = g_settings.opts().hookNtUserGetForegroundWindow;
+    hdd->EnableNtSetDebugFilterStateHook        = g_settings.opts().hookNtSetDebugFilterState;
+    hdd->EnableGetTickCountHook                 = g_settings.opts().hookGetTickCount;
+    hdd->EnableGetTickCount64Hook               = g_settings.opts().hookGetTickCount64;
+    hdd->EnableGetLocalTimeHook                 = g_settings.opts().hookGetLocalTime;
+    hdd->EnableGetSystemTimeHook                = g_settings.opts().hookGetSystemTime;
+    hdd->EnableNtQuerySystemTimeHook            = g_settings.opts().hookNtQuerySystemTime;
+    hdd->EnableNtQueryPerformanceCounterHook    = g_settings.opts().hookNtQueryPerformanceCounter;
+    hdd->EnableNtSetInformationProcessHook      = g_settings.opts().hookNtSetInformationProcess;
 
-    hdd->EnableNtGetContextThreadHook = g_settings.opts().hookNtGetContextThread;
-    hdd->EnableNtSetContextThreadHook = g_settings.opts().hookNtSetContextThread;
-    hdd->EnableNtContinueHook = g_settings.opts().hookNtContinue | g_settings.opts().killAntiAttach;
-    hdd->EnableKiUserExceptionDispatcherHook = g_settings.opts().hookKiUserExceptionDispatcher;
-    hdd->EnableMalwareRunPeUnpacker = g_settings.opts().malwareRunpeUnpacker;
+    hdd->EnableNtGetContextThreadHook           = g_settings.opts().hookNtGetContextThread;
+    hdd->EnableNtSetContextThreadHook           = g_settings.opts().hookNtSetContextThread;
+    hdd->EnableNtContinueHook                   = g_settings.opts().hookNtContinue | g_settings.opts().killAntiAttach;
+    hdd->EnableKiUserExceptionDispatcherHook    = g_settings.opts().hookKiUserExceptionDispatcher;
+    hdd->EnableMalwareRunPeUnpacker             = g_settings.opts().malwareRunpeUnpacker;
 
     hdd->isKernel32Hooked = FALSE;
     hdd->isNtdllHooked = FALSE;
     hdd->isUserDllHooked = FALSE;
 }
 
+//----------------------------------------------------------------------------------
 bool RemoveDebugPrivileges(HANDLE hProcess)
 {
     TOKEN_PRIVILEGES Debug_Privileges;

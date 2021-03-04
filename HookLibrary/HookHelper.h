@@ -21,7 +21,7 @@ bool HasDebugPrivileges(HANDLE hProcess);
 bool IsWow64Process(HANDLE ProcessHandle);
 NTSTATUS InstallInstrumentationCallbackHook(_In_ HANDLE ProcessHandle, _In_ BOOLEAN Remove);
 DWORD GetExplorerProcessId();
-DWORD GetProcessIdByName(PUNICODE_STRING processName);
+DWORD NtGetProcessIdByName(PUNICODE_STRING processName);
 bool IsProcessNameBad(PUNICODE_STRING processName);
 
 DWORD GetProcessIdByProcessHandle(HANDLE hProcess);

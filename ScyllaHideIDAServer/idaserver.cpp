@@ -183,32 +183,32 @@ void MapSettings()
     g_settings.opts().malwareRunpeUnpacker          = idaExchange.EnableMalwareRunPeUnpacker;
 }
 
-static void DoSomeBitCheck()
+//----------------------------------------------------------------------------------
+static void DoProcessBitnessCheck()
 {
-    if (scl::IsWindows64())
-    {
-        HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, 0, ProcessId);
-        if (hProcess)
-        {
+    if (!scl::IsWindows64())
+        return;
+
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, 0, ProcessId);
+    if (hProcess == NULL)
+        return;
 
 #ifdef _WIN64
-            if (scl::IsWow64Process(hProcess))
-            {
-                printf("WARNING: This is a 32bit process and I am 64bit!");
-                getchar();
-                ExitProcess(0);
-            }
-#else
-            if (!scl::IsWow64Process(hProcess))
-            {
-                printf("WARNING: This is a 64bit process and I am 32bit!");
-                getchar();
-                ExitProcess(0);
-            }
-#endif
-            CloseHandle(hProcess);
-        }
+    if (scl::IsWow64Process(hProcess))
+    {
+        printf("WARNING: This is a 32bit process and I am 64bit!");
+        getchar();
+        ExitProcess(0);
     }
+#else
+    if (!scl::IsWow64Process(hProcess))
+    {
+        printf("WARNING: This is a 64bit process and I am 32bit!");
+        getchar();
+        ExitProcess(0);
+    }
+#endif
+    CloseHandle(hProcess);
 }
 
 //----------------------------------------------------------------------------------
@@ -228,9 +228,8 @@ static void handleClient(SOCKET ClientSocket)
             switch (idaExchange.notif_code)
             {
                 case dbg_process_attach:
-                {
                     break;
-                }
+
                 case dbg_process_start:
                 {
                     ProcessId = idaExchange.ProcessId;
@@ -239,7 +238,7 @@ static void handleClient(SOCKET ClientSocket)
 
                     if (!once)
                     {
-                        DoSomeBitCheck();
+                        DoProcessBitnessCheck();
                         once = true;
                     }
 
@@ -268,7 +267,7 @@ static void handleClient(SOCKET ClientSocket)
                 {
                     if (!once)
                     {
-                        DoSomeBitCheck();
+                        DoProcessBitnessCheck();
                         once = true;
                     }
 

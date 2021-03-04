@@ -9,8 +9,8 @@
 // http://terminus.rewolf.pl/terminus/structures/ntdll/_PEB_combined.html
 //
 
-namespace scl {
-
+namespace scl
+{
 #pragma pack(push, 1)
     template <class T>
     struct _LIST_ENTRY_T
@@ -209,4 +209,4 @@ namespace scl {
 
     DWORD GetHeapFlagsOffset(bool x64);
     DWORD GetHeapForceFlagsOffset(bool x64);
-    }
+}
