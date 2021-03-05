@@ -61,18 +61,9 @@ static void AttachProcess(DWORD dwPID)
     int res = attach_process((pid_t)dwPID);
 
     if (res == -1)
-    {
-        MessageBoxA(
-            ::GetForegroundWindow(),
-            "Can't attach to that process !",
-            "ScyllaHide Plugin", MB_OK | MB_ICONERROR);
-    }
+        warning("Can't attach to that process !");
     else if (res == -2)
-    {
-        MessageBoxA(::GetForegroundWindow(),
-            "Can't find that PID !",
-            "ScyllaHide Plugin", MB_OK | MB_ICONERROR);
-    }
+        warning("Can't find that PID !");
 }
 
 //----------------------------------------------------------------------------------
@@ -99,7 +90,10 @@ static bool SetDebugPrivileges()
 }
 
 //----------------------------------------------------------------------------------
-static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va)
+static ssize_t idaapi debug_mainloop(
+    void *user_data,
+    int notif_code,
+    va_list va)
 {
     switch (notif_code)
     {
@@ -123,7 +117,7 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
             {
                 //char text[1000];
                 //wsprintfA(text, "dbg->id %d processor %s", dbg->id , dbg->processor);
-                //MessageBoxA(0, text, text,0);
+                //warning("%s", text);
                 // dbg->id DEBUGGER_ID_WINDBG -> 64bit and 32bit
                 // dbg->id DEBUGGER_ID_X86_IA32_WIN32_USER -> 32bit
 
@@ -220,9 +214,7 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
             if (!isAttach && dbg->is_remote())
             {
                 if (!SendEventToServer(notif_code, ProcessId))
-                {
                     g_log.LogError(L"SendEventToServer failed");
-                }
             }
             else if (!isAttach)
             {
@@ -293,7 +285,7 @@ static plugmod_t *idaapi IDAP_init(void)
     if (inf.filetype != f_PE)
         return PLUGIN_SKIP;
 
-    //install hook for debug mainloop
+    // Install hook for debug mainloop
     if (!hook_to_notification_point(HT_DBG, debug_mainloop, NULL))
     {
         g_log.LogError(L"Error hooking notification point");
@@ -321,7 +313,7 @@ static char IDAP_help[] = SCYLLA_HIDE_NAME_A;
 static char IDAP_name[] = SCYLLA_HIDE_NAME_A;
 
 // The hot-key the user can use to run your plug-in.
-static char IDAP_hotkey[] = "Alt-X";
+static char IDAP_hotkey[] = "Alt-Shift-X";
 
 //----------------------------------------------------------------------------------
 // The all-important exported PLUGIN object
@@ -339,7 +331,10 @@ idaman ida_module_data plugin_t PLUGIN =
 };
 
 //----------------------------------------------------------------------------------
-BOOL WINAPI DllMain(HINSTANCE hInstDll, DWORD dwReason, LPVOID lpReserved)
+BOOL WINAPI DllMain(
+    HINSTANCE hInstDll,
+    DWORD dwReason,
+    LPVOID lpReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
     {
@@ -362,10 +357,13 @@ BOOL WINAPI DllMain(HINSTANCE hInstDll, DWORD dwReason, LPVOID lpReserved)
         g_settings.Load(g_scyllaHideIniPath.c_str());
 
         if (!SetDebugPrivileges())
+        {
             g_log.LogInfo(L"Failed to set debug privileges");
+            msg("ScyllaHide: failed to set debug privileges");
+        }
 
         if (!StartWinsock())
-            MessageBoxW(0, L"Failed to start Winsock!", L"Error", MB_ICONERROR);
+            warning("Failed to start Winsock!");
     }
 
     return TRUE;

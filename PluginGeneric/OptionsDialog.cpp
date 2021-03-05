@@ -7,35 +7,30 @@
 #include <Scylla/Util.h>
 #include <Scylla/Version.h>
 
-
 #include "..\PluginGeneric\Injector.h"
 
 #ifdef OLLY1
-#pragma pack(push)
-#include <ollydbg1/ollyplugindefinitions.h>
-#pragma pack(pop)
-#include "..\ScyllaHideOlly1Plugin\resource.h"
-
+    #pragma pack(push)
+    #include <ollydbg1/ollyplugindefinitions.h>
+    #pragma pack(pop)
+    #include "..\ScyllaHideOlly1Plugin\resource.h"
 #elif defined(OLLY2)
-#pragma pack(push)
-#include <ollydbg2/plugin.h>
-#pragma pack(pop)
-#include "..\ScyllaHideOlly2Plugin\resource.h"
-
+    #pragma pack(push)
+    #include <ollydbg2/plugin.h>
+    #pragma pack(pop)
+    #include "..\ScyllaHideOlly2Plugin\resource.h"
 #elif defined(__IDP__)
-
-#include <ida.hpp>
-#include <idp.hpp>
-#include <dbg.hpp>
-#include "..\ScyllaHideIDAProPlugin\IdaServerClient.h"
-#include "..\PluginGeneric\AttachDialog.h"
-#include "..\ScyllaHideIDAProPlugin\resource.h"
-
+    #include <ida.hpp>
+    #include <idp.hpp>
+    #include <dbg.hpp>
+    #include "..\ScyllaHideIDAProPlugin\IdaServerClient.h"
+    #include "..\PluginGeneric\AttachDialog.h"
+    #include "..\ScyllaHideIDAProPlugin\resource.h"
 #elif defined(X64DBG)
-#include <x64dbg/bridgemain.h>
-#include "..\ScyllaHideX64DBGPlugin\resource.h"
-#define IDC_EXCEPTION_ALL 123432
-#define IDC_SELECT_EXCEPTIONS 23949
+    #include <x64dbg/bridgemain.h>
+    #include "..\ScyllaHideX64DBGPlugin\resource.h"
+    #define IDC_EXCEPTION_ALL 123432
+    #define IDC_SELECT_EXCEPTIONS 23949
 #endif
 
 #define SCYLLA_MAX_TOOLTIP_WIDTH    500
@@ -570,8 +565,13 @@ HWND CreateTooltips(HWND hDlg)
     return hToolTipWnd;
 }
 
-//options dialog proc
-INT_PTR CALLBACK OptionsDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+//----------------------------------------------------------------------------------
+// Options dialog proc
+INT_PTR CALLBACK OptionsDlgProc(
+    HWND hDlg,
+    UINT message,
+    WPARAM wParam,
+    LPARAM lParam)
 {
     switch (message)
     {
