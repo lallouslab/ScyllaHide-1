@@ -18,13 +18,13 @@ typedef void(__cdecl * t_SetDebuggerBreakpoint)(DWORD_PTR address);
 t_SetDebuggerBreakpoint _SetDebuggerBreakpoint = 0;
 
 //anti-attach vars
-DWORD ExitThread_addr;
-BYTE* DbgUiIssueRemoteBreakin_addr;
-DWORD jmpback;
-DWORD DbgUiRemoteBreakin_addr;
-BYTE* RemoteBreakinPatch;
-BYTE OllyRemoteBreakInReplacement[8];
-HANDLE hDebuggee;
+DWORD   ExitThread_addr;
+BYTE    *DbgUiIssueRemoteBreakin_addr;
+DWORD   jmpback;
+DWORD   DbgUiRemoteBreakin_addr;
+BYTE    *RemoteBreakinPatch;
+BYTE    OllyRemoteBreakInReplacement[8];
+HANDLE  hDebuggee;
 
 //----------------------------------------------------------------------------------
 void ReadNtApiInformation(HOOK_DLL_DATA *hdd)
@@ -63,6 +63,7 @@ void ReadNtApiInformation(HOOK_DLL_DATA *hdd)
     g_log.LogInfo(L"Loaded VA for NtUserGetThreadState = 0x%p", hdd->NtUserGetThreadStateVA);
 }
 
+//----------------------------------------------------------------------------------
 #ifndef _WIN64
 void __declspec(naked) handleAntiAttach()
 {
@@ -86,7 +87,8 @@ void __declspec(naked) handleAntiAttach()
     ULONG oldProtect;
     VirtualProtectEx(hDebuggee, RemoteBreakinPatch, sizeof(OllyRemoteBreakInReplacement), PAGE_EXECUTE_READ, &oldProtect);
 
-    _asm {
+    _asm
+    {
         popad
         mov eax, jmpback
         jmp eax
@@ -500,26 +502,34 @@ DWORD GetAddressOfEntryPoint(BYTE * dllMemory)
 }
 
 //----------------------------------------------------------------------------------
-LPVOID StealthDllInjection(HANDLE hProcess, const WCHAR * dllPath, BYTE * dllMemory)
+LPVOID StealthDllInjection(
+    HANDLE hProcess,
+    const WCHAR *dllPath,
+    BYTE *dllMemory)
 {
     LPVOID remoteImageBaseOfInjectedDll = 0;
 
-    if (dllMemory)
+    if (dllMemory != nullptr)
     {
         remoteImageBaseOfInjectedDll = MapModuleToProcess(hProcess, dllMemory, false);
-        if (remoteImageBaseOfInjectedDll)
+        if (remoteImageBaseOfInjectedDll != nullptr)
         {
-
             DWORD_PTR entryPoint = (DWORD_PTR)GetAddressOfEntryPoint(dllMemory);
 
-            if (entryPoint)
+            if (entryPoint != 0)
             {
                 DWORD_PTR dllMain = entryPoint + (DWORD_PTR)remoteImageBaseOfInjectedDll;
 
                 g_log.LogInfo(L"DLL INJECTION: Starting thread at RVA %p VA %p!", entryPoint, dllMain);
 
                 HANDLE hThread;
-                NTSTATUS status = CreateAndWaitForThread(hProcess, (LPTHREAD_START_ROUTINE)dllMain, remoteImageBaseOfInjectedDll, &hThread, TRUE);
+                NTSTATUS status = CreateAndWaitForThread(
+                    hProcess,
+                    (LPTHREAD_START_ROUTINE)dllMain,
+                    remoteImageBaseOfInjectedDll,
+                    &hThread,
+                    TRUE);
+
                 if (NT_SUCCESS(status))
                     CloseHandle(hThread);
                 else
@@ -538,7 +548,10 @@ LPVOID StealthDllInjection(HANDLE hProcess, const WCHAR * dllPath, BYTE * dllMem
 //----------------------------------------------------------------------------------
 void injectDll(DWORD targetPid, const WCHAR *dllPath)
 {
-    HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, 0, targetPid);
+    HANDLE hProcess = OpenProcess(
+        PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION,
+        0,
+        targetPid);
     if (hProcess == nullptr)
     {
         g_log.LogError(L"DLL INJECTION: Cannot open process handle %d", targetPid);
@@ -563,11 +576,10 @@ void injectDll(DWORD targetPid, const WCHAR *dllPath)
     }
 
     bool processIsWow64 = scl::IsWow64Process(hProcess);
-    if ((scl::IsWindows64() &&
-        ((processIsWow64 && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386) ||
-        (!processIsWow64 && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64)))
-        ||
-        (!scl::IsWindows64() && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386))
+    if (     (    scl::IsWindows64()
+               && (    (processIsWow64 && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
+                    || (!processIsWow64 && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64) ) )
+         || (!scl::IsWindows64() && ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386))
     {
         g_log.LogError(L"DLL INJECTION: DLL %s is of wrong bitness for process!", dllPath);
         free(dllMemory);
@@ -630,14 +642,21 @@ void injectDll(DWORD targetPid, const WCHAR *dllPath)
 }
 
 //----------------------------------------------------------------------------------
-BYTE *ReadFileToMemory(const WCHAR * targetFilePath)
+BYTE *ReadFileToMemory(const WCHAR *targetFilePath)
 {
     HANDLE hFile;
     DWORD dwBytesRead;
     DWORD FileSize;
     BYTE* FilePtr = 0;
 
-    hFile = CreateFileW(targetFilePath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0);
+    hFile = CreateFileW(
+        targetFilePath,
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        0,
+        0);
     if (hFile != INVALID_HANDLE_VALUE)
     {
         FileSize = GetFileSize(hFile, NULL);
@@ -696,9 +715,9 @@ void FillHookDllData(HANDLE hProcess, HOOK_DLL_DATA *hdd)
     hdd->EnableKiUserExceptionDispatcherHook    = g_settings.opts().hookKiUserExceptionDispatcher;
     hdd->EnableMalwareRunPeUnpacker             = g_settings.opts().malwareRunpeUnpacker;
 
-    hdd->isKernel32Hooked = FALSE;
-    hdd->isNtdllHooked = FALSE;
-    hdd->isUserDllHooked = FALSE;
+    hdd->isKernel32Hooked   = FALSE;
+    hdd->isNtdllHooked      = FALSE;
+    hdd->isUserDllHooked    = FALSE;
 }
 
 //----------------------------------------------------------------------------------
@@ -723,54 +742,50 @@ bool RemoveDebugPrivileges(HANDLE hProcess)
     return false;
 }
 
-#define DbgBreakPoint_FUNC_SIZE 2
+//----------------------------------------------------------------------------------
+#define DbgBreakPoint_FUNC_SIZE             2
 #ifdef _WIN64
-#define DbgUiRemoteBreakin_FUNC_SIZE 0x42
-#define NtContinue_FUNC_SIZE 11
+    #define DbgUiRemoteBreakin_FUNC_SIZE    0x42
+    #define NtContinue_FUNC_SIZE            11
 #else
-#define DbgUiRemoteBreakin_FUNC_SIZE 0x54
-#define NtContinue_FUNC_SIZE 0x18
+    #define DbgUiRemoteBreakin_FUNC_SIZE    0x54
+    #define NtContinue_FUNC_SIZE            0x18
 #endif
 
-typedef struct _PATCH_FUNC {
+struct PATCH_FUNC
+{
     PCHAR funcName;
     PVOID funcAddr;
     SIZE_T funcSize;
-} PATCH_FUNC;
-
-
-PATCH_FUNC patchFunctions[] = {
-    {
-        "DbgBreakPoint", 0, DbgBreakPoint_FUNC_SIZE
-    },
-    {
-        "DbgUiRemoteBreakin", 0, DbgUiRemoteBreakin_FUNC_SIZE
-    },
-    {
-        "NtContinue", 0, NtContinue_FUNC_SIZE
-    }
+} static patchFunctions[] =
+{
+    { "DbgBreakPoint",      0, DbgBreakPoint_FUNC_SIZE },
+    { "DbgUiRemoteBreakin", 0, DbgUiRemoteBreakin_FUNC_SIZE },
+    { "NtContinue",         0, NtContinue_FUNC_SIZE }
 };
 
+//----------------------------------------------------------------------------------
 bool ApplyAntiAntiAttach(DWORD targetPid)
 {
     bool result = false;
-    HANDLE hProcess = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, 0, targetPid);
+    HANDLE hProcess = OpenProcess(
+        PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION,
+        0,
+        targetPid);
 
-    if (!hProcess)
+    if (hProcess == NULL)
         return result;
 
     HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
 
     for (ULONG i = 0; i < _countof(patchFunctions); i++)
-    {
         patchFunctions[i].funcAddr = (PVOID)GetProcAddress(hMod, patchFunctions[i].funcName);
-    }
 
     for (ULONG i = 0; i < _countof(patchFunctions); i++)
     {
         ULONG oldProtection;
-        if (VirtualProtectEx(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, PAGE_EXECUTE_READWRITE, &oldProtection) &&
-            WriteProcessMemory(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, nullptr))
+        if (    VirtualProtectEx(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, PAGE_EXECUTE_READWRITE, &oldProtection)
+             && WriteProcessMemory(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, nullptr))
         {
             VirtualProtectEx(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, oldProtection, &oldProtection);
             result = true;

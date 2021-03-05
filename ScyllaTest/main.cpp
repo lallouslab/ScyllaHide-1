@@ -515,31 +515,23 @@ static void PrintScyllaTestResult(ScyllaTestResult result, ULONG charsPrinted)
         printf(" ");
 
     switch (result)
-        {
+    {
         case ScyllaTestOk:
-        {
             SetConsoleTextAttribute(stdOut, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
             printf("OK\n");
             break;
-        }
         case ScyllaTestFail:
-        {
             SetConsoleTextAttribute(stdOut, FOREGROUND_RED | BACKGROUND_BLUE | FOREGROUND_INTENSITY);
             printf("FAIL\n");
             break;
-        }
         case ScyllaTestDetected:
-        {
             SetConsoleTextAttribute(stdOut, FOREGROUND_RED | FOREGROUND_INTENSITY);
             printf("DETECTED\n");
             break;
-        }
         case ScyllaTestSkip:
-        {
             SetConsoleTextAttribute(stdOut, FOREGROUND_GREEN | FOREGROUND_BLUE);
             printf("SKIP\n");
             break;
-        }
         default:
             printf("UNKNOWN\n");
             break;
@@ -577,6 +569,9 @@ int WINAPI wWinMain(
     if (!OpenConsole())
         return -1;
 
+    // Command line argument to give a chance to pause the test, inject the ScyllaHide, then resume
+    bool bPauseAtStart = lpCmdLine != nullptr && wcsstr(lpCmdLine, L"--pause-at-start");
+
     g_proc_handle = GetRealCurrentProcess();
     if (g_proc_handle == INVALID_HANDLE_VALUE)
     {
@@ -592,7 +587,7 @@ int WINAPI wWinMain(
     }
     
     WCHAR title[64];
-    _snwprintf_s(title, sizeof(title), L"[ScyllaTest] PID: %u", (ULONG)(ULONG_PTR)NtCurrentTeb()->ClientId.UniqueProcess);
+    _snwprintf_s(title, sizeof(title), L"[ScyllaTest] PID: %u", ULONG(ULONG_PTR(NtCurrentTeb()->ClientId.UniqueProcess)));
     SetConsoleTitleW(title);
 
     auto is_wow64 = scl::IsWow64Process(g_proc_handle);
@@ -615,6 +610,12 @@ int WINAPI wWinMain(
 
 #define SCYLLA_TEST(x) \
     SCYLLA_TEST_IF(true, x)
+
+    if (bPauseAtStart)
+    {
+        printf("Inject ScyllaHide then press ENTER to resume the test. Press Ctrl+C to abort the test.");
+        getchar();
+    }
 
     printf("Starting test loop. Press CTRL+C or the power button on your PC to exit.\n\n");
     while (true)
