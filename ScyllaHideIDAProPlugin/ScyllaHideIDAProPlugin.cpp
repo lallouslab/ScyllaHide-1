@@ -32,22 +32,22 @@ extern t_AttachProcess _AttachProcess;
 const WCHAR g_scyllaHideDllFilename[]       = L"HookLibraryx86.dll";
 const WCHAR g_scyllaHidex64ServerFilename[] = L"ScyllaHideIDAServerx64.exe";
 
-scl::Settings g_settings;
-scl::Logger g_log;
-std::wstring g_scyllaHideDllPath;
-std::wstring g_scyllaHideIniPath;
-std::wstring g_scyllaHidex64ServerPath;
+scl::Settings   g_settings;
+scl::Logger     g_log;
+std::wstring    g_scyllaHideDllPath;
+std::wstring    g_scyllaHideIniPath;
+std::wstring    g_scyllaHidex64ServerPath;
 
 HOOK_DLL_DATA g_hdd;
 
-//globals
-HINSTANCE hinst;
-DWORD ProcessId = 0;
-bool bHooked = false;
-HMODULE hNtdllModule = 0;
+// Globals
+HINSTANCE           hinst;
+DWORD               ProcessId = 0;
+bool                bHooked = false;
+HMODULE             hNtdllModule = 0;
 PROCESS_INFORMATION ServerProcessInfo = { 0 };
-STARTUPINFO ServerStartupInfo = { 0 };
-bool isAttach = false;
+STARTUPINFO         ServerStartupInfo = { 0 };
+bool                isAttach = false;
 
 //----------------------------------------------------------------------------------
 static void LogCallback(const char *message)
@@ -139,22 +139,18 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
 
                     //msg("Host-String: %s\n", hoststring.c_str());
                     //msg("Host: %s\n", host);
-    #ifdef __EA64__
+#ifdef __EA64__
                     // Autostart server if necessary
                     if (g_settings.opts().idaAutoStartServer)
                     {
                         if (!scl::FileExistsW(g_scyllaHidex64ServerPath.c_str()))
-                        {
                             g_log.LogError(L"Cannot find server executable %s\n", g_scyllaHidex64ServerPath.c_str());
-                        }
 
                         DWORD dwRunningStatus = 0;
                         if (ServerProcessInfo.hProcess)
-                        {
                             GetExitCodeProcess(ServerProcessInfo.hProcess, &dwRunningStatus);
-                        }
 
-                        if(dwRunningStatus != STILL_ACTIVE)
+                        if (dwRunningStatus != STILL_ACTIVE)
                         {
                             if (ServerProcessInfo.hProcess)
                             {
@@ -171,16 +167,12 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
                             wcscat(commandline, g_settings.opts().idaServerPort.c_str());
                             ServerStartupInfo.cb = sizeof(ServerStartupInfo);
                             if (!CreateProcessW(0, commandline, NULL, NULL, FALSE, 0, NULL, NULL, &ServerStartupInfo, &ServerProcessInfo))
-                            {
                                 g_log.LogError(L"Cannot start server, error %d", GetLastError());
-                            }
                             else
-                            {
                                 g_log.LogInfo(L"Started IDA Server successfully");
-                            }
                         }
                     }
-    #endif
+#endif
                     if (ConnectToServer(host.c_str(), port))
                     {
                         if (!SendEventToServer(notif_code, ProcessId))
@@ -193,7 +185,7 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
                 }
                 else
                 {
-    #ifndef __EA64__
+#ifndef __EA64__
                     if (!scl::IsWindows64() && !bHooked) // Only apply on native x86 OS, see dbg_library_unload below
                     {
                         ReadNtApiInformation(&g_hdd);
@@ -225,7 +217,6 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
 
         case dbg_library_load:
         {
-
             if (!isAttach && dbg->is_remote())
             {
                 if (!SendEventToServer(notif_code, ProcessId))
@@ -235,10 +226,10 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
             }
             else if (!isAttach)
             {
-    #ifndef __EA64__
+#ifndef __EA64__
                 if (bHooked)
                     startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), false);
-    #endif
+#endif
             }
             break;
         }
@@ -257,7 +248,6 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
             break;
         }
 #endif
-
         case dbg_bpt:
         {
             thid_t tid = va_arg(va, thid_t);
@@ -276,20 +266,27 @@ static ssize_t idaapi debug_mainloop(void *user_data, int notif_code, va_list va
     return 0;
 }
 
-//cleanup on plugin unload
+//----------------------------------------------------------------------------------
+// Cleanup on plugin unload
 static void idaapi IDAP_term(void)
 {
     unhook_from_notification_point(HT_DBG, debug_mainloop, NULL);
 }
 
-//called when user clicks in plugin menu or presses hotkey
+//----------------------------------------------------------------------------------
+// Called when user clicks in plugin menu or presses hotkey
 static bool idaapi IDAP_run(size_t arg)
 {
-    DialogBoxW(hinst, MAKEINTRESOURCE(IDD_OPTIONS), GetForegroundWindow(), &OptionsDlgProc);
+    DialogBoxW(
+        hinst,
+        MAKEINTRESOURCE(IDD_OPTIONS),
+        GetForegroundWindow(),
+        &OptionsDlgProc);
     return true;
 }
 
-//init the plugin
+//----------------------------------------------------------------------------------
+// Init the plugin
 static plugmod_t *idaapi IDAP_init(void)
 {
     // Ensure target is PE executable
@@ -315,6 +312,7 @@ static plugmod_t *idaapi IDAP_init(void)
     return PLUGIN_KEEP;
 }
 
+//----------------------------------------------------------------------------------
 // There isn't much use for these yet, but I set them anyway.
 static char IDAP_comment[] = SCYLLA_HIDE_NAME_A " Usermode Anti-Anti-Debug Plugin";
 static char IDAP_help[] = SCYLLA_HIDE_NAME_A;
@@ -325,6 +323,7 @@ static char IDAP_name[] = SCYLLA_HIDE_NAME_A;
 // The hot-key the user can use to run your plug-in.
 static char IDAP_hotkey[] = "Alt-X";
 
+//----------------------------------------------------------------------------------
 // The all-important exported PLUGIN object
 idaman ida_module_data plugin_t PLUGIN =
 {
@@ -339,6 +338,7 @@ idaman ida_module_data plugin_t PLUGIN =
     IDAP_hotkey
 };
 
+//----------------------------------------------------------------------------------
 BOOL WINAPI DllMain(HINSTANCE hInstDll, DWORD dwReason, LPVOID lpReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
@@ -362,14 +362,10 @@ BOOL WINAPI DllMain(HINSTANCE hInstDll, DWORD dwReason, LPVOID lpReserved)
         g_settings.Load(g_scyllaHideIniPath.c_str());
 
         if (!SetDebugPrivileges())
-        {
             g_log.LogInfo(L"Failed to set debug privileges");
-        }
 
         if (!StartWinsock())
-        {
             MessageBoxW(0, L"Failed to start Winsock!", L"Error", MB_ICONERROR);
-        }
     }
 
     return TRUE;
