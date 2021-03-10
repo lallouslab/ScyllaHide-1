@@ -28,12 +28,14 @@ IDA_SERVER_EXCHANGE idaExchange = { 0 };
 DWORD ProcessId = 0;
 bool bHooked = false;
 
-static void LogCallback(const wchar_t * msg)
+//----------------------------------------------------------------------------------
+static void LogCallback(const wchar_t *msg)
 {
     _putws(msg);
 }
 
-static void checkPaths(const std::wstring & wstrPath)
+//----------------------------------------------------------------------------------
+static void checkPaths(const std::wstring &wstrPath)
 {
     g_scyllaHideDllPath = wstrPath + g_scyllaHideDllFilename;
 
@@ -58,6 +60,7 @@ static void checkPaths(const std::wstring & wstrPath)
     }
 }
 
+//----------------------------------------------------------------------------------
 static void startListen()
 {
     int iResult;
@@ -236,6 +239,8 @@ static void handleClient(SOCKET ClientSocket)
                     bHooked = false;
                     ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
 
+                    ReadNtApiInformation(&g_hdd);
+
                     if (!once)
                     {
                         DoProcessBitnessCheck();
@@ -253,7 +258,7 @@ static void handleClient(SOCKET ClientSocket)
                 case dbg_process_exit:
                 {
 
-                    iResult = -1; //terminate loop
+                    iResult = -1; // Terminate loop
                     break;
                 }
                 case dbg_library_load:

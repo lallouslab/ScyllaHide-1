@@ -37,7 +37,7 @@ void InstallAntiAttachHook();
 void startInjectionProcess(HANDLE hProcess, HOOK_DLL_DATA *hdd, BYTE * dllMemory, bool newProcess);
 void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR * dllPath, bool newProcess);
 void injectDll(DWORD targetPid, const WCHAR * dllPath);
-BYTE * ReadFileToMemory(const WCHAR * targetFilePath);
+BYTE *ReadFileToMemory(const WCHAR * targetFilePath);
 void FillHookDllData(HANDLE hProcess, HOOK_DLL_DATA * data);
 bool StartFixBeingDebugged(DWORD targetPid, bool setToNull);
 bool ApplyAntiAntiAttach(DWORD targetPid);

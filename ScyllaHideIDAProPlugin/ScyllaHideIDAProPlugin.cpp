@@ -1,7 +1,6 @@
 #define USE_STANDARD_FILE_FUNCTIONS
 #pragma warning(disable : 4996 4512 4127 4201)
 
-
 #ifdef __EA64__
     #pragma comment(lib, "x64_win_vc_64/ida.lib")
 #else
@@ -9,11 +8,16 @@
 #endif
 
 #include <Windows.h>
+
+#pragma warning(push)
+#pragma warning(disable: 4267 4244)
 #include <ida.hpp>
 #include <idp.hpp>
 #include <dbg.hpp>
 #include <loader.hpp>
 #include <kernwin.hpp>
+#pragma warning(pop)
+
 #include <Scylla/Logger.h>
 #include <Scylla/Settings.h>
 #include <Scylla/Version.h>
@@ -85,7 +89,6 @@ static bool SetDebugPrivileges()
             CloseHandle(hToken);
         }
     }
-
     return retVal;
 }
 
@@ -107,7 +110,7 @@ static ssize_t idaapi debug_mainloop(
         {
             isAttach = false;
 
-            const debug_event_t * dbgEvent = va_arg(va, const debug_event_t *);
+            auto dbgEvent = va_arg(va, const debug_event_t *);
 
             ProcessId = dbgEvent->pid;
             bHooked = false;
@@ -130,9 +133,6 @@ static ssize_t idaapi debug_mainloop(
 
                     get_process_options(NULL, NULL, NULL, &hoststring, NULL, NULL);
                     GetHost(hoststring, host);
-
-                    //msg("Host-String: %s\n", hoststring.c_str());
-                    //msg("Host: %s\n", host);
 #ifdef __EA64__
                     // Autostart server if necessary
                     if (g_settings.opts().idaAutoStartServer)
@@ -285,6 +285,32 @@ static plugmod_t *idaapi IDAP_init(void)
     if (inf.filetype != f_PE)
         return PLUGIN_SKIP;
 
+    _AttachProcess = AttachProcess;
+    hNtdllModule = GetModuleHandleW(L"ntdll.dll");
+
+    auto wstrPath = scl::GetModuleFileNameW(hinst);
+    wstrPath.resize(wstrPath.find_last_of(L'\\') + 1);
+
+    g_scyllaHideDllPath = wstrPath + g_scyllaHideDllFilename;
+    g_scyllaHideIniPath = wstrPath + scl::Settings::kFileName;
+    g_scyllaHidex64ServerPath = wstrPath + g_scyllaHidex64ServerFilename;
+
+    auto log_file = wstrPath + scl::Logger::kFileName;
+    g_log.SetLogFile(log_file.c_str());
+    g_log.SetLogCb(scl::Logger::Info, LogCallback);
+    g_log.SetLogCb(scl::Logger::Error, LogCallback);
+
+    g_settings.Load(g_scyllaHideIniPath.c_str());
+
+    if (!SetDebugPrivileges())
+    {
+        g_log.LogInfo(L"Failed to set debug privileges");
+        msg("ScyllaHide: failed to set debug privileges");
+    }
+
+    if (!StartWinsock())
+        warning("Failed to start Winsock!");
+
     // Install hook for debug mainloop
     if (!hook_to_notification_point(HT_DBG, debug_mainloop, NULL))
     {
@@ -331,7 +357,7 @@ idaman ida_module_data plugin_t PLUGIN =
 };
 
 //----------------------------------------------------------------------------------
-BOOL WINAPI DllMain(
+static BOOL WINAPI DllMain(
     HINSTANCE hInstDll,
     DWORD dwReason,
     LPVOID lpReserved)
@@ -339,31 +365,7 @@ BOOL WINAPI DllMain(
     if (dwReason == DLL_PROCESS_ATTACH)
     {
         hinst = hInstDll;
-        _AttachProcess = AttachProcess;
-        hNtdllModule = GetModuleHandleW(L"ntdll.dll");
-
-        auto wstrPath = scl::GetModuleFileNameW(hInstDll);
-        wstrPath.resize(wstrPath.find_last_of(L'\\') + 1);
-
-        g_scyllaHideDllPath = wstrPath + g_scyllaHideDllFilename;
-        g_scyllaHideIniPath = wstrPath + scl::Settings::kFileName;
-        g_scyllaHidex64ServerPath = wstrPath + g_scyllaHidex64ServerFilename;
-
-        auto log_file = wstrPath + scl::Logger::kFileName;
-        g_log.SetLogFile(log_file.c_str());
-        g_log.SetLogCb(scl::Logger::Info, LogCallback);
-        g_log.SetLogCb(scl::Logger::Error, LogCallback);
-
-        g_settings.Load(g_scyllaHideIniPath.c_str());
-
-        if (!SetDebugPrivileges())
-        {
-            g_log.LogInfo(L"Failed to set debug privileges");
-            msg("ScyllaHide: failed to set debug privileges");
-        }
-
-        if (!StartWinsock())
-            warning("Failed to start Winsock!");
+		::DisableThreadLibraryCalls(hInstDll);
     }
 
     return TRUE;

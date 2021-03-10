@@ -4,16 +4,16 @@
 
 typedef BOOL(WINAPI * t_DllMain)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
-typedef void (WINAPI *t_GetSystemTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
-typedef void (WINAPI *t_GetLocalTime)(LPSYSTEMTIME lpSystemTime); //Kernel32.dll / kernelbase
-typedef DWORD (WINAPI *t_timeGetTime)(void); //Winmm.dll -> sometimes GetTickCount
-typedef DWORD (WINAPI *t_GetTickCount)(void); //Kernel32.dll / kernelbase
+typedef void (WINAPI *t_GetSystemTime)(LPSYSTEMTIME lpSystemTime); // Kernel32.dll / kernelbase
+typedef void (WINAPI *t_GetLocalTime)(LPSYSTEMTIME lpSystemTime); // Kernel32.dll / kernelbase
+typedef DWORD (WINAPI *t_timeGetTime)(void); // Winmm.dll -> sometimes GetTickCount
+typedef DWORD (WINAPI *t_GetTickCount)(void); // Kernel32.dll / kernelbase
 typedef ULONGLONG (WINAPI *t_GetTickCount64)(void);
-typedef BOOL (WINAPI *t_QueryPerformanceCounter)(LARGE_INTEGER *lpPerformanceCount); //Kernel32.dll -> ntdll.RtlQueryPerformanceCounter -> NO NATIVE CALL
-typedef BOOL (WINAPI *t_QueryPerformanceFrequency)(LARGE_INTEGER *lpFrequency); //kernel32.dll -> ntdll.RtlQueryPerformanceFrequency -> ntdll.ZwQueryPerformanceCounter
+typedef BOOL (WINAPI *t_QueryPerformanceCounter)(LARGE_INTEGER *lpPerformanceCount); // Kernel32.dll -> ntdll.RtlQueryPerformanceCounter -> NO NATIVE CALL
+typedef BOOL (WINAPI *t_QueryPerformanceFrequency)(LARGE_INTEGER *lpFrequency); // kernel32.dll -> ntdll.RtlQueryPerformanceFrequency -> ntdll.ZwQueryPerformanceCounter
 
-typedef DWORD (WINAPI *t_OutputDebugStringA)(LPCSTR lpOutputString); //Kernel32.dll
-typedef DWORD (WINAPI *t_OutputDebugStringW)(LPCWSTR lpOutputString); //Kernel32.dll
+typedef DWORD (WINAPI *t_OutputDebugStringA)(LPCSTR lpOutputString); // Kernel32.dll
+typedef DWORD (WINAPI *t_OutputDebugStringW)(LPCWSTR lpOutputString); // Kernel32.dll
 //WIN 7 X64: OutputDebugStringW -> OutputDebugStringA
 
 #define MAX_NATIVE_HOOKS 32
@@ -49,13 +49,13 @@ struct HOOK_DLL_DATA
     BOOLEAN EnablePreventThreadCreation;
     BOOLEAN EnableNtCreateThreadExHook;
 
-    //Protect and Hide Hardware Breakpoints
+    // Protect and Hide Hardware Breakpoints
     BOOLEAN EnableNtGetContextThreadHook;
     BOOLEAN EnableNtSetContextThreadHook;
     BOOLEAN EnableNtContinueHook;
     BOOLEAN EnableKiUserExceptionDispatcherHook;
 
-    //Native user32.dll/win32u.dll functions
+    // Native user32.dll/win32u.dll functions
     ULONG_PTR NtUserBlockInputVA;
     ULONG_PTR NtUserQueryWindowVA;
     ULONG_PTR NtUserGetForegroundWindowVA;
@@ -79,10 +79,10 @@ struct HOOK_DLL_DATA
 	BOOLEAN EnableNtQuerySystemTimeHook;
 	BOOLEAN EnableNtQueryPerformanceCounterHook;
 
-	//special
+	// Special
 	BOOLEAN EnableMalwareRunPeUnpacker;
 	//t_NtWriteVirtualMemory dNtWriteVirtualMemory;
-	//DWORD NtWriteVirtualMemoryBackupSize;
+	// DWORD NtWriteVirtualMemoryBackupSize;
 	t_NtResumeThread dNtResumeThread;
 	DWORD NtResumeThreadBackupSize;
 

@@ -130,7 +130,10 @@ void InstallAntiAttachHook()
 //----------------------------------------------------------------------------------
 bool StartFixBeingDebugged(DWORD targetPid, bool setToNull)
 {
-    scl::Handle hProcess(OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, 0, targetPid));
+    scl::Handle hProcess(OpenProcess(
+            PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION,
+            0,
+            targetPid));
     if (!hProcess.get())
         return false;
 
@@ -287,7 +290,7 @@ bool SafeResumeProcess(PPROCESS_SUSPEND_INFO suspendInfo)
 bool StartHooking(
     HANDLE hProcess,
     HOOK_DLL_DATA *hdd,
-    BYTE * dllMemory,
+    BYTE *dllMemory,
     DWORD_PTR imageBase)
 {
     hdd->dwProtectedProcessId = GetCurrentProcessId();
@@ -378,7 +381,11 @@ void startInjectionProcess(
 }
 
 //----------------------------------------------------------------------------------
-void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR *dllPath, bool newProcess)
+void startInjection(
+    DWORD targetPid,
+    HOOK_DLL_DATA *hdd,
+    const WCHAR *dllPath,
+    bool newProcess)
 {
     HANDLE hProcess = OpenProcess(
         PROCESS_SUSPEND_RESUME | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION,
@@ -387,7 +394,7 @@ void startInjection(DWORD targetPid, HOOK_DLL_DATA *hdd, const WCHAR *dllPath, b
 
     if (hProcess != NULL)
     {
-        BYTE * dllMemory = ReadFileToMemory(dllPath);
+        BYTE *dllMemory = ReadFileToMemory(dllPath);
         if (dllMemory != nullptr)
         {
             startInjectionProcess(hProcess, hdd, dllMemory, newProcess);
@@ -415,7 +422,7 @@ NTSTATUS CreateAndWaitForThread(
     BOOLEAN suppressDllMains)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    const t_NtCreateThreadEx fpNtCreateThreadEx = (t_NtCreateThreadEx)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtCreateThreadEx");
+    const auto fpNtCreateThreadEx = (t_NtCreateThreadEx)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtCreateThreadEx");
     if (fpNtCreateThreadEx == nullptr)
     {
         // We are on XP/2003 - use CreateRemoteThread
