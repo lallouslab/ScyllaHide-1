@@ -46,7 +46,7 @@ HWND    hwndFoundWindow = NULL;
 wchar_t title[256];
 wchar_t pidTextHex[9];
 wchar_t pidTextDec[11];
-DWORD   pid = NULL;
+DWORD   pid = 0;
 
 //----------------------------------------------------------------------------------
 // Toggles the finder image
@@ -82,7 +82,7 @@ void MoveCursorPositionToBullsEye(HWND hwnd)
 }
 
 //----------------------------------------------------------------------------------
-//does some sanity checks on a possible found window
+// Do sanity checks on a possible found window
 BOOL CheckWindowValidity(HWND hwnd, HWND hwndToCheck)
 {
     HWND hwndTemp = NULL;
@@ -135,7 +135,11 @@ void DisplayExe(HWND hwnd, DWORD dwPid)
 
 //----------------------------------------------------------------------------------
 // Attach dialog proc
-INT_PTR CALLBACK AttachProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK AttachProc(
+    HWND hWnd,
+    UINT message,
+    WPARAM wParam,
+    LPARAM lParam)
 {
     wchar_t buf[20] = { 0 };
 
@@ -187,7 +191,7 @@ INT_PTR CALLBACK AttachProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                         if (wcscmp(buf, pidTextHex) != 0)
                         {
                             wcscpy(pidTextHex, buf);
-                            swscanf(pidTextHex, L"%X", &pid);
+                            swscanf_s(pidTextHex, L"%X", &pid);
                             wsprintfW(pidTextDec, L"%d", pid);
                             SetDlgItemTextW(hWnd, IDC_PIDDEC, pidTextDec);
                             DisplayExe(hWnd, pid);
@@ -203,8 +207,8 @@ INT_PTR CALLBACK AttachProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                     {
                         if (wcscmp(buf, pidTextDec) != 0)
                         {
-                            wcscpy(pidTextDec, buf);
-                            swscanf(pidTextDec, L"%d", &pid);
+                            wcscpy_s(pidTextDec, buf);
+                            swscanf_s(pidTextDec, L"%d", &pid);
                             wsprintfW(pidTextHex, L"%X", pid);
                             SetDlgItemTextW(hWnd, IDC_PIDHEX, pidTextHex);
                             DisplayExe(hWnd, pid);

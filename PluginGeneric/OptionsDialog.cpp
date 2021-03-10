@@ -52,7 +52,10 @@ wchar_t DllPathForInjection[MAX_PATH] = { 0 };
 
 void createExceptionWindow(HWND hwnd);
 
-static void UpdateOptionsExceptions(HWND hWnd, const scl::Settings *settings)
+//----------------------------------------------------------------------------------
+static void UpdateOptionsExceptions(
+    HWND hWnd,
+    const scl::Settings *settings)
 {
     auto opts = &settings->opts();
 
@@ -679,15 +682,15 @@ INT_PTR CALLBACK OptionsDlgProc(
 
                     SaveOptions(hDlg, &g_settings);
 
-                    if (ProcessId)
+                    if (ProcessId != 0)
                     {
-        #ifdef __IDP__
-        #ifndef __EA64__
+#ifdef __IDP__
+    #ifndef __EA64__
                         startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
-        #endif
-        #else
+    #endif
+#else
                         startInjection(ProcessId, &g_hdd, g_scyllaHideDllPath.c_str(), true);
-        #endif
+#endif
                         bHooked = true;
                         MessageBoxW(hDlg, L"Applied changes! Restarting target is NOT necessary!", L"[ScyllaHide Options]", MB_ICONINFORMATION);
                     }
@@ -818,7 +821,8 @@ INT_PTR CALLBACK OptionsDlgProc(
                     EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLLOAD), checked);
                     EnableWindow(GetDlgItem(hDlg, IDC_LOADDLLNOTHING), checked);
 
-                    if (!checked) {
+                    if (!checked)
+                    {
                         CheckDlgButton(hDlg, IDC_LOADDLLLOAD, BST_UNCHECKED);
                         CheckDlgButton(hDlg, IDC_LOADDLLNOTHING, BST_UNCHECKED);
                     }
@@ -826,102 +830,100 @@ INT_PTR CALLBACK OptionsDlgProc(
                 }
         #endif
 
-        #ifdef __IDP__
-                case IDC_DLLNORMAL:
-                case IDC_DLLSTEALTH:
-                case IDC_DLLUNLOAD:
-                {
-                    if (HIWORD(wParam) != BN_CLICKED)
-                        break;
-
-                    //DLL injection options need to be updated on-the-fly coz the injection button is ON the options window
-                    g_settings.opts().dllStealth = (IsDlgButtonChecked(hDlg, IDC_DLLSTEALTH) == BST_CHECKED);
-                    g_settings.opts().dllNormal = (IsDlgButtonChecked(hDlg, IDC_DLLNORMAL) == BST_CHECKED);
-                    g_settings.opts().dllUnload = (IsDlgButtonChecked(hDlg, IDC_DLLUNLOAD) == BST_CHECKED);
+#ifdef __IDP__
+            case IDC_DLLNORMAL:
+            case IDC_DLLSTEALTH:
+            case IDC_DLLUNLOAD:
+            {
+                if (HIWORD(wParam) != BN_CLICKED)
                     break;
-                }
 
-                case IDC_INJECTDLL:
+                // DLL injection options need to be updated on-the-fly because the injection button is ON the options window
+                g_settings.opts().dllStealth = (IsDlgButtonChecked(hDlg, IDC_DLLSTEALTH) == BST_CHECKED);
+                g_settings.opts().dllNormal = (IsDlgButtonChecked(hDlg, IDC_DLLNORMAL) == BST_CHECKED);
+                g_settings.opts().dllUnload = (IsDlgButtonChecked(hDlg, IDC_DLLUNLOAD) == BST_CHECKED);
+                break;
+            }
+
+            case IDC_INJECTDLL:
+            {
+                if (HIWORD(wParam) != BN_CLICKED)
+                    break;
+
+                if (ProcessId != 0)
                 {
-                    if (HIWORD(wParam) != BN_CLICKED)
-                        break;
-
-                    if (ProcessId)
+                    if (scl::GetFileDialogW(DllPathForInjection, _countof(DllPathForInjection)))
                     {
-                        if (scl::GetFileDialogW(DllPathForInjection, _countof(DllPathForInjection)))
+                        if (dbg->is_remote())
                         {
-                            if (dbg->is_remote())
-                            {
-                                SendInjectToServer(ProcessId);
-                            }
-                            else
-                            {
-        #ifndef __EA64__
-                                injectDll(ProcessId, DllPathForInjection);
-        #endif
-                            }
-
+                            SendInjectToServer(ProcessId);
                         }
+                        else
+                        {
+    #ifndef __EA64__
+                            injectDll(ProcessId, DllPathForInjection);
+    #endif
+                        }
+
                     }
-                    break;
                 }
-
-                case IDC_ATTACH:
-                {
-                    if (HIWORD(wParam) != BN_CLICKED)
-                        break;
-
-                    EndDialog(hDlg, NULL);
-                    DialogBoxW(hinst, MAKEINTRESOURCE(IDD_ATTACH), GetForegroundWindow(), &AttachProc);
-                    break;
-                }
-
-        case IDC_ABOUT:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
                 break;
+            }
 
-            scl::ShowAboutBox(GetForegroundWindow());
-            break;
-        }
+            case IDC_ATTACH:
+            {
+                if (HIWORD(wParam) != BN_CLICKED)
+                    break;
+
+                EndDialog(hDlg, NULL);
+                DialogBoxW(hinst, MAKEINTRESOURCE(IDD_ATTACH), GetForegroundWindow(), AttachProc);
+                break;
+            }
+
+            case IDC_ABOUT:
+            {
+                if (HIWORD(wParam) != BN_CLICKED)
+                    break;
+
+                scl::ShowAboutBox(GetForegroundWindow());
+                break;
+            }
 #endif
+            case IDC_SELECT_EXCEPTIONS:
+            {
+                if (HIWORD(wParam) != BN_CLICKED)
+                    break;
 
-        case IDC_SELECT_EXCEPTIONS:
-        {
-            if (HIWORD(wParam) != BN_CLICKED)
+                createExceptionWindow(hDlg);
+                UpdateOptionsExceptions(hDlg, &g_settings);
                 break;
+            }
 
-            createExceptionWindow(hDlg);
-            UpdateOptionsExceptions(hDlg, &g_settings);
-            break;
+            default:
+                break;
         }
+    }
+        break;
 
         default:
-            break;
-        }
-
-    }
-    break;
-
-    default:
-    {
-        return FALSE;
-    }
+            return FALSE;
     }
 
-    return 0;
+    return FALSE;
 }
 
 
 
-typedef struct _NAME_TOOLTIP {
+//----------------------------------------------------------------------------------
+struct NAME_TOOLTIP {
     const WCHAR * name;
     WCHAR * tooltip;
     ULONG_PTR windowId;
-} NAME_TOOLTIP;
+};
 
 
-enum {
+enum
+{
     ID_EXCEPTION_PRINT = 200,
     ID_EXCEPTION_RIP,
     ID_EXCEPTION_Noncontinable,
@@ -953,6 +955,7 @@ NAME_TOOLTIP exceptionNamesTooltip[] = {
 #endif
 };
 
+//----------------------------------------------------------------------------------
 #define HEIGHT_OF_EXCEPTION_CHECKBOX 16
 #define EXCEPTION_WINDOW_BASE_HEIGHT 46
 #define EXCEPTION_WINDOW_WIDTH 200
@@ -1055,7 +1058,7 @@ LRESULT CALLBACK ExceptionSettingsWndproc(HWND hwnd, UINT msg, WPARAM wparam, LP
     return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
-
+//----------------------------------------------------------------------------------
 void createExceptionWindow(HWND hwnd)
 {
     WCHAR * classname = L"exception_window_config_scyllahide";

@@ -514,40 +514,42 @@ LPVOID StealthDllInjection(
     const WCHAR *dllPath,
     BYTE *dllMemory)
 {
-    LPVOID remoteImageBaseOfInjectedDll = 0;
-
-    if (dllMemory != nullptr)
+    LPVOID remoteImageBaseOfInjectedDll = nullptr;
+    do 
     {
+        if (dllMemory == nullptr)
+            break;
+
         remoteImageBaseOfInjectedDll = MapModuleToProcess(hProcess, dllMemory, false);
-        if (remoteImageBaseOfInjectedDll != nullptr)
-        {
-            DWORD_PTR entryPoint = (DWORD_PTR)GetAddressOfEntryPoint(dllMemory);
+        if (remoteImageBaseOfInjectedDll == nullptr)
+            break;
 
-            if (entryPoint != 0)
-            {
-                DWORD_PTR dllMain = entryPoint + (DWORD_PTR)remoteImageBaseOfInjectedDll;
+        DWORD_PTR entryPoint = (DWORD_PTR)GetAddressOfEntryPoint(dllMemory);
 
-                g_log.LogInfo(L"DLL INJECTION: Starting thread at RVA %p VA %p!", entryPoint, dllMain);
+        if (entryPoint == 0)
+            break;
 
-                HANDLE hThread;
-                NTSTATUS status = CreateAndWaitForThread(
-                    hProcess,
-                    (LPTHREAD_START_ROUTINE)dllMain,
-                    remoteImageBaseOfInjectedDll,
-                    &hThread,
-                    TRUE);
+        DWORD_PTR dllMain = entryPoint + (DWORD_PTR)remoteImageBaseOfInjectedDll;
 
-                if (NT_SUCCESS(status))
-                    CloseHandle(hThread);
-                else
-                    g_log.LogError(L"DLL INJECTION: Failed to start thread: 0x%08X!", status);
-            }
-        }
+        g_log.LogInfo(L"DLL INJECTION: Starting thread at RVA %p VA %p!", entryPoint, dllMain);
+
+        HANDLE hThread;
+        NTSTATUS status = CreateAndWaitForThread(
+            hProcess,
+            (LPTHREAD_START_ROUTINE)dllMain,
+            remoteImageBaseOfInjectedDll,
+            &hThread,
+            TRUE);
+
+        if (NT_SUCCESS(status))
+            CloseHandle(hThread);
         else
-        {
-            g_log.LogError(L"DLL INJECTION: Failed to map image of %s!", dllPath);
-        }
-    }
+            g_log.LogError(L"DLL INJECTION: Failed to start thread: 0x%08X!", status);
+    } while (false);
+
+
+    if (remoteImageBaseOfInjectedDll == nullptr)
+        g_log.LogError(L"DLL INJECTION: Failed to map image of %s!", dllPath);
 
     return remoteImageBaseOfInjectedDll;
 }
@@ -559,6 +561,7 @@ void injectDll(DWORD targetPid, const WCHAR *dllPath)
         PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION,
         0,
         targetPid);
+
     if (hProcess == nullptr)
     {
         g_log.LogError(L"DLL INJECTION: Cannot open process handle %d", targetPid);

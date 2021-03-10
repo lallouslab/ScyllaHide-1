@@ -119,7 +119,7 @@ bool startInjectionProcess(HANDLE hProcess, BYTE *dllMemory)
 }
 
 //----------------------------------------------------------------------------------
-bool startInjection(DWORD targetPid, const WCHAR * dllPath)
+bool startInjection(DWORD targetPid, const WCHAR *dllPath)
 {
     bool result = false;
 

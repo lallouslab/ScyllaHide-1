@@ -29,11 +29,13 @@ bool StartWinsock()
 	return isWinsockUp;
 }
 
+//----------------------------------------------------------------------------------
 bool SendInjectToServer(unsigned long ProcessId)
 {
 	return SendEventToServer(inject_dll, ProcessId);
 }
 
+//----------------------------------------------------------------------------------
 bool SendEventToServer(unsigned long notif_code, unsigned long ProcessId)
 {
 	idaExchange.notif_code = notif_code;
@@ -100,13 +102,15 @@ bool SendEventToServer(unsigned long notif_code, unsigned long ProcessId)
 	return false;
 }
 
+//----------------------------------------------------------------------------------
 void CloseServerSocket()
 {
 	closesocket(serverSock);
 	serverSock = INVALID_SOCKET;
 }
 
-bool ConnectToServer(const char * host, const char * port)
+//----------------------------------------------------------------------------------
+bool ConnectToServer(const char *host, const char *port)
 {
 	int iResult;
 	struct addrinfo *result = NULL,
@@ -165,6 +169,7 @@ bool ConnectToServer(const char * host, const char * port)
 	}
 }
 
+//----------------------------------------------------------------------------------
 //input: tcp:port=5000,server=localhost
 //OR
 //input: IP

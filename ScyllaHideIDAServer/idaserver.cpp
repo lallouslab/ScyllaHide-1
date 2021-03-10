@@ -22,10 +22,9 @@ std::wstring g_scyllaHideDllPath;
 HOOK_DLL_DATA g_hdd;
 
 WSADATA wsaData;
-char * ListenPortString = IDA_SERVER_DEFAULT_PORT_TEXT;
+char *ListenPortString = IDA_SERVER_DEFAULT_PORT_TEXT;
 unsigned short ListenPort = IDA_SERVER_DEFAULT_PORT;
 IDA_SERVER_EXCHANGE idaExchange = { 0 };
-DWORD ProcessId = 0;
 bool bHooked = false;
 
 //----------------------------------------------------------------------------------
@@ -146,7 +145,7 @@ static void startListen()
 }
 
 //----------------------------------------------------------------------------------
-void MapSettings()
+static void MapSettings()
 {
     g_settings.opts().dllUnload                     = idaExchange.UnloadDllAfterInjection;
     g_settings.opts().dllNormal                     = idaExchange.DllInjectNormal;
@@ -187,7 +186,7 @@ void MapSettings()
 }
 
 //----------------------------------------------------------------------------------
-static void DoProcessBitnessCheck()
+static void DoProcessBitnessCheck(DWORD ProcessId)
 {
     if (!scl::IsWindows64())
         return;
@@ -219,6 +218,7 @@ static void handleClient(SOCKET ClientSocket)
 {
     int iResult;
     bool once = false;
+    auto ProcessId = idaExchange.ProcessId;
 
     do
     {
@@ -235,7 +235,6 @@ static void handleClient(SOCKET ClientSocket)
 
                 case dbg_process_start:
                 {
-                    ProcessId = idaExchange.ProcessId;
                     bHooked = false;
                     ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
 
@@ -243,7 +242,7 @@ static void handleClient(SOCKET ClientSocket)
 
                     if (!once)
                     {
-                        DoProcessBitnessCheck();
+                        DoProcessBitnessCheck(ProcessId);
                         once = true;
                     }
 
@@ -272,7 +271,7 @@ static void handleClient(SOCKET ClientSocket)
                 {
                     if (!once)
                     {
-                        DoProcessBitnessCheck();
+                        DoProcessBitnessCheck(ProcessId);
                         once = true;
                     }
 
