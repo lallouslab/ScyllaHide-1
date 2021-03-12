@@ -16,7 +16,7 @@ enum server_dbg_notification_t
 typedef struct _IDA_SERVER_EXCHANGE
 {
 	unsigned long result;
-	unsigned long notif_code; //server_dbg_notification_t
+	unsigned long notif_code; // IDA dbg_notification_t
 	unsigned long ProcessId;
 
 	unsigned char EnablePebBeingDebugged;
@@ -58,6 +58,8 @@ typedef struct _IDA_SERVER_EXCHANGE
 	unsigned char EnableGetSystemTimeHook;
 	unsigned char EnableNtQuerySystemTimeHook;
 	unsigned char EnableNtQueryPerformanceCounterHook;
+
+    unsigned char KillAntiAttach;
 
 	unsigned char DllInjectStealth;
 	unsigned char DllInjectNormal;

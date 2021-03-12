@@ -87,7 +87,10 @@ static void UpdateOptionsExceptions(
     CheckDlgButton(hWnd, IDC_EXCEPTION_ALL, check ? BST_CHECKED : BST_UNCHECKED);
 }
 
-static void UpdateOptions(HWND hWnd, const scl::Settings *settings)
+//----------------------------------------------------------------------------------
+static void UpdateOptions(
+    HWND hWnd,
+    const scl::Settings *settings)
 {
     auto opts = &settings->opts();
 
@@ -203,67 +206,69 @@ void SaveOptions(HWND hWnd, scl::Settings *settings)
     opts->hookNtYieldExecution                  = (IsDlgButtonChecked(hWnd, IDC_NTYIELDEXECUTION) == BST_CHECKED);
     opts->hookOutputDebugStringA                = (IsDlgButtonChecked(hWnd, IDC_OUTPUTDEBUGSTRINGA) == BST_CHECKED);
     opts->hookNtGetContextThread                = (IsDlgButtonChecked(hWnd, IDC_NTGETCONTEXTTHREAD) == BST_CHECKED);
-    opts->hookNtSetContextThread = (IsDlgButtonChecked(hWnd, IDC_NTSETCONTEXTTHREAD) == BST_CHECKED);
-    opts->hookNtContinue = (IsDlgButtonChecked(hWnd, IDC_NTCONTINUE) == BST_CHECKED);
-    opts->hookKiUserExceptionDispatcher = (IsDlgButtonChecked(hWnd, IDC_KIUED) == BST_CHECKED);
-    opts->hookNtUserFindWindowEx = (IsDlgButtonChecked(hWnd, IDC_NTUSERFINDWINDOWEX) == BST_CHECKED);
-    opts->hookNtUserBlockInput = (IsDlgButtonChecked(hWnd, IDC_NTUSERBLOCKINPUT) == BST_CHECKED);
-    opts->hookNtUserBuildHwndList = (IsDlgButtonChecked(hWnd, IDC_NTUSERBUILDHWNDLIST) == BST_CHECKED);
-    opts->hookNtUserQueryWindow = (IsDlgButtonChecked(hWnd, IDC_NTUSERQUERYWINDOW) == BST_CHECKED);
-    opts->hookNtUserGetForegroundWindow = (IsDlgButtonChecked(hWnd, IDC_NTUSERGETFOREGROUNDWINDOW) == BST_CHECKED);
-    opts->hookNtSetDebugFilterState = (IsDlgButtonChecked(hWnd, IDC_NTSETDEBUGFILTERSTATE) == BST_CHECKED);
-    opts->hookNtClose = (IsDlgButtonChecked(hWnd, IDC_NTCLOSE) == BST_CHECKED);
-    opts->hookNtCreateThreadEx = (IsDlgButtonChecked(hWnd, IDC_NTCREATETHREADEX) == BST_CHECKED);
-    opts->preventThreadCreation = (IsDlgButtonChecked(hWnd, IDC_PREVENTTHREADCREATION) == BST_CHECKED);
-    opts->malwareRunpeUnpacker = (IsDlgButtonChecked(hWnd, IDC_RUNPE) == BST_CHECKED);
-    opts->removeDebugPrivileges = (IsDlgButtonChecked(hWnd, IDC_REMOVEDEBUGPRIV) == BST_CHECKED);
-    opts->dllStealth = (IsDlgButtonChecked(hWnd, IDC_DLLSTEALTH) == BST_CHECKED);
-    opts->dllNormal = (IsDlgButtonChecked(hWnd, IDC_DLLNORMAL) == BST_CHECKED);
-    opts->dllUnload = (IsDlgButtonChecked(hWnd, IDC_DLLUNLOAD) == BST_CHECKED);
-    opts->hookGetTickCount = (IsDlgButtonChecked(hWnd, IDC_GETTICKCOUNT) == BST_CHECKED);
-    opts->hookGetTickCount64 = (IsDlgButtonChecked(hWnd, IDC_GETTICKCOUNT64) == BST_CHECKED);
-    opts->hookGetLocalTime = (IsDlgButtonChecked(hWnd, IDC_GETLOCALTIME) == BST_CHECKED);
-    opts->hookGetSystemTime = (IsDlgButtonChecked(hWnd, IDC_GETSYSTEMTIME) == BST_CHECKED);
-    opts->hookNtQuerySystemTime = (IsDlgButtonChecked(hWnd, IDC_NTQUERYSYSTEMTIME) == BST_CHECKED);
-    opts->hookNtQueryPerformanceCounter = (IsDlgButtonChecked(hWnd, IDC_NTQUERYPERFCOUNTER) == BST_CHECKED);
-    opts->killAntiAttach = (IsDlgButtonChecked(hWnd, IDC_KILLANTIATTACH) == BST_CHECKED);
+    opts->hookNtSetContextThread                = (IsDlgButtonChecked(hWnd, IDC_NTSETCONTEXTTHREAD) == BST_CHECKED);
+    opts->hookNtContinue                        = (IsDlgButtonChecked(hWnd, IDC_NTCONTINUE) == BST_CHECKED);
+    opts->hookKiUserExceptionDispatcher         = (IsDlgButtonChecked(hWnd, IDC_KIUED) == BST_CHECKED);
+    opts->hookNtUserFindWindowEx                = (IsDlgButtonChecked(hWnd, IDC_NTUSERFINDWINDOWEX) == BST_CHECKED);
+    opts->hookNtUserBlockInput                  = (IsDlgButtonChecked(hWnd, IDC_NTUSERBLOCKINPUT) == BST_CHECKED);
+    opts->hookNtUserBuildHwndList               = (IsDlgButtonChecked(hWnd, IDC_NTUSERBUILDHWNDLIST) == BST_CHECKED);
+    opts->hookNtUserQueryWindow                 = (IsDlgButtonChecked(hWnd, IDC_NTUSERQUERYWINDOW) == BST_CHECKED);
+    opts->hookNtUserGetForegroundWindow         = (IsDlgButtonChecked(hWnd, IDC_NTUSERGETFOREGROUNDWINDOW) == BST_CHECKED);
+    opts->hookNtSetDebugFilterState             = (IsDlgButtonChecked(hWnd, IDC_NTSETDEBUGFILTERSTATE) == BST_CHECKED);
+    opts->hookNtClose                           = (IsDlgButtonChecked(hWnd, IDC_NTCLOSE) == BST_CHECKED);
+    opts->hookNtCreateThreadEx                  = (IsDlgButtonChecked(hWnd, IDC_NTCREATETHREADEX) == BST_CHECKED);
+    opts->preventThreadCreation                 = (IsDlgButtonChecked(hWnd, IDC_PREVENTTHREADCREATION) == BST_CHECKED);
+    opts->malwareRunpeUnpacker                  = (IsDlgButtonChecked(hWnd, IDC_RUNPE) == BST_CHECKED);
+    opts->removeDebugPrivileges                 = (IsDlgButtonChecked(hWnd, IDC_REMOVEDEBUGPRIV) == BST_CHECKED);
+    opts->dllStealth                            = (IsDlgButtonChecked(hWnd, IDC_DLLSTEALTH) == BST_CHECKED);
+    opts->dllNormal                             = (IsDlgButtonChecked(hWnd, IDC_DLLNORMAL) == BST_CHECKED);
+    opts->dllUnload                             = (IsDlgButtonChecked(hWnd, IDC_DLLUNLOAD) == BST_CHECKED);
+    opts->hookGetTickCount                      = (IsDlgButtonChecked(hWnd, IDC_GETTICKCOUNT) == BST_CHECKED);
+    opts->hookGetTickCount64                    = (IsDlgButtonChecked(hWnd, IDC_GETTICKCOUNT64) == BST_CHECKED);
+    opts->hookGetLocalTime                      = (IsDlgButtonChecked(hWnd, IDC_GETLOCALTIME) == BST_CHECKED);
+    opts->hookGetSystemTime                     = (IsDlgButtonChecked(hWnd, IDC_GETSYSTEMTIME) == BST_CHECKED);
+    opts->hookNtQuerySystemTime                 = (IsDlgButtonChecked(hWnd, IDC_NTQUERYSYSTEMTIME) == BST_CHECKED);
+    opts->hookNtQueryPerformanceCounter         = (IsDlgButtonChecked(hWnd, IDC_NTQUERYPERFCOUNTER) == BST_CHECKED);
+    opts->killAntiAttach                        = (IsDlgButtonChecked(hWnd, IDC_KILLANTIATTACH) == BST_CHECKED);
 
 #ifdef OLLY1
-    opts->ollyRemoveEpBreak = (IsDlgButtonChecked(hWnd, IDC_DELEPBREAK) == BST_CHECKED);
-    opts->ollyFixBugs = (IsDlgButtonChecked(hWnd, IDC_FIXOLLY) == BST_CHECKED);
-    opts->ollyX64Fix = (IsDlgButtonChecked(hWnd, IDC_X64FIX) == BST_CHECKED);
-    opts->ollyBreakOnTls = (IsDlgButtonChecked(hWnd, IDC_BREAKTLS) == BST_CHECKED);
-    opts->ollySkipEpOutsideCode = (IsDlgButtonChecked(hWnd, IDC_SKIPEPOUTSIDE) == BST_CHECKED);
-    opts->ollyIgnoreBadPeImage = (IsDlgButtonChecked(hWnd, IDC_BADPEIMAGE) == BST_CHECKED);
-    opts->ollyAdvancedGoto = (IsDlgButtonChecked(hWnd, IDC_ADVANCEDGOTO) == BST_CHECKED);
-    opts->ollySkipCompressedDoAnalyze = (IsDlgButtonChecked(hWnd, IDC_COMPRESSEDANALYZE) == BST_CHECKED);
-    opts->ollySkipCompressedDoNothing = (IsDlgButtonChecked(hWnd, IDC_COMPRESSEDNOTHING) == BST_CHECKED);
-    opts->ollySkipLoadDllDoLoad = (IsDlgButtonChecked(hWnd, IDC_LOADDLLLOAD) == BST_CHECKED);
-    opts->ollySkipLoadDllDoNothing = (IsDlgButtonChecked(hWnd, IDC_LOADDLLNOTHING) == BST_CHECKED);
-    opts->ollyAdvancedInfobar = (IsDlgButtonChecked(hWnd, IDC_ADVANCEDINFOBAR) == BST_CHECKED);
+    opts->ollyRemoveEpBreak                     = (IsDlgButtonChecked(hWnd, IDC_DELEPBREAK) == BST_CHECKED);
+    opts->ollyFixBugs                           = (IsDlgButtonChecked(hWnd, IDC_FIXOLLY) == BST_CHECKED);
+    opts->ollyX64Fix                            = (IsDlgButtonChecked(hWnd, IDC_X64FIX) == BST_CHECKED);
+    opts->ollyBreakOnTls                        = (IsDlgButtonChecked(hWnd, IDC_BREAKTLS) == BST_CHECKED);
+    opts->ollySkipEpOutsideCode                 = (IsDlgButtonChecked(hWnd, IDC_SKIPEPOUTSIDE) == BST_CHECKED);
+    opts->ollyIgnoreBadPeImage                  = (IsDlgButtonChecked(hWnd, IDC_BADPEIMAGE) == BST_CHECKED);
+    opts->ollyAdvancedGoto                      = (IsDlgButtonChecked(hWnd, IDC_ADVANCEDGOTO) == BST_CHECKED);
+    opts->ollySkipCompressedDoAnalyze           = (IsDlgButtonChecked(hWnd, IDC_COMPRESSEDANALYZE) == BST_CHECKED);
+    opts->ollySkipCompressedDoNothing           = (IsDlgButtonChecked(hWnd, IDC_COMPRESSEDNOTHING) == BST_CHECKED);
+    opts->ollySkipLoadDllDoLoad                 = (IsDlgButtonChecked(hWnd, IDC_LOADDLLLOAD) == BST_CHECKED);
+    opts->ollySkipLoadDllDoNothing              = (IsDlgButtonChecked(hWnd, IDC_LOADDLLNOTHING) == BST_CHECKED);
+    opts->ollyAdvancedInfobar                   = (IsDlgButtonChecked(hWnd, IDC_ADVANCEDINFOBAR) == BST_CHECKED);
 
-    opts->ollyWindowTitle = scl::GetDlgItemTextW(hWnd, IDC_OLLYTITLE);
+    opts->ollyWindowTitle                       = scl::GetDlgItemTextW(hWnd, IDC_OLLYTITLE);
     SetWindowTextW(hwmain, opts->ollyWindowTitle.c_str());
 
 #elif defined(OLLY2)
-    opts->ollyWindowTitle = scl::GetDlgItemTextW(hWnd, IDC_OLLYTITLE);
+    opts->ollyWindowTitle                       = scl::GetDlgItemTextW(hWnd, IDC_OLLYTITLE);
     SetWindowTextW(hwollymain, opts->ollyWindowTitle.c_str());
 
 #elif defined(__IDP__)
-    opts->idaAutoStartServer = (IsDlgButtonChecked(hWnd, IDC_AUTOSTARTSERVER) == BST_CHECKED);
-    opts->idaServerPort = scl::GetDlgItemTextW(hWnd, IDC_SERVERPORT);
+    opts->idaAutoStartServer                    = (IsDlgButtonChecked(hWnd, IDC_AUTOSTARTSERVER) == BST_CHECKED);
+    opts->idaServerPort                         = scl::GetDlgItemTextW(hWnd, IDC_SERVERPORT);
 #endif
 
     settings->Save();
 }
 
+//----------------------------------------------------------------------------------
 HWND CreateTooltips(HWND hDlg)
 {
     static const struct
     {
         unsigned ctrl_id;
         const wchar_t *text;
-    } ctrl_tips[] = {
+    } ctrl_tips[] =
+    {
         { IDOK, L"Apply Settings and close the dialog" },
         { IDC_PROFILES, L"Select profile" },
         { IDC_SAVEPROFILE, L"Save profile" },

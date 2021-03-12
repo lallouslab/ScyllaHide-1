@@ -154,9 +154,6 @@ static ssize_t idaapi debug_mainloop(
     int notif_code,
     va_list va)
 {
-    auto dbgEvent = va_arg(va, const debug_event_t*);
-    ProcessId = dbgEvent->pid;
-
     switch (notif_code)
     {
         case dbg_process_attach:
@@ -164,7 +161,11 @@ static ssize_t idaapi debug_mainloop(
             if (!dbg->is_remote())
                 break;
 
+            auto dbgEvent = va_arg(va, const debug_event_t *);
+            ProcessId = dbgEvent->pid;
+
             isAttach = true;
+            bHooked = false;
 
             if (DoConnectToServer())
             {
@@ -177,10 +178,12 @@ static ssize_t idaapi debug_mainloop(
 
         case dbg_process_start:
         {
+            auto dbgEvent = va_arg(va, const debug_event_t *);
+            ProcessId = dbgEvent->pid;
+
             isAttach = false;
-
-
             bHooked = false;
+
             ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
 
             if (dbg->is_remote())
@@ -208,9 +211,10 @@ static ssize_t idaapi debug_mainloop(
             break;
         }
 
+        case dbg_process_detach:
         case dbg_process_exit:
         {
-            if (!isAttach && dbg->is_remote())
+            if (dbg->is_remote())
             {
                 if (!SendEventToServer(notif_code, ProcessId))
                     g_log.LogError(L"SendEventToServer failed");

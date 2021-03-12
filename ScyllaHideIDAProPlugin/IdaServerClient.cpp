@@ -16,6 +16,7 @@ WSADATA wsaData;
 IDA_SERVER_EXCHANGE idaExchange = {0};
 extern wchar_t DllPathForInjection[MAX_PATH];
 
+//----------------------------------------------------------------------------------
 bool StartWinsock()
 {
 	bool isWinsockUp = true;
@@ -79,6 +80,7 @@ bool SendEventToServer(unsigned long notif_code, unsigned long ProcessId)
     idaExchange.DllInjectNormal                     = g_settings.opts().dllNormal;
     idaExchange.DllInjectStealth                    = g_settings.opts().dllStealth;
     idaExchange.UnloadDllAfterInjection             = g_settings.opts().dllUnload;
+    idaExchange.KillAntiAttach                      = g_settings.opts().killAntiAttach;
 
 	wcscpy_s(idaExchange.DllPathForInjection, DllPathForInjection);
 
@@ -113,9 +115,7 @@ void CloseServerSocket()
 bool ConnectToServer(const char *host, const char *port)
 {
 	int iResult;
-	struct addrinfo *result = NULL,
-		*ptr = NULL,
-		hints;
+	struct addrinfo *result = NULL, hints;
 
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family     = AF_UNSPEC;
@@ -124,14 +124,14 @@ bool ConnectToServer(const char *host, const char *port)
 
 	// Resolve the server address and port
 	iResult = getaddrinfo(host, port, &hints, &result);
-	if ( iResult != 0 )
+	if (iResult != 0)
 	{
 		//printf("getaddrinfo failed with error: %d\n", iResult);
 		return false;
 	}
 
 	// Attempt to connect to an address until one succeeds
-	for (ptr=result; ptr != NULL ;ptr=ptr->ai_next)
+	for (auto ptr=result; ptr != NULL ;ptr=ptr->ai_next)
 	{
 
 		// Create a SOCKET for connecting to server

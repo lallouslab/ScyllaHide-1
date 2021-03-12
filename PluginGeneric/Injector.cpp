@@ -322,7 +322,7 @@ bool StartHooking(
 void startInjectionProcess(
     HANDLE hProcess,
     HOOK_DLL_DATA *hdd,
-    BYTE * dllMemory,
+    BYTE *dllMemory,
     bool newProcess)
 {
     PROCESS_SUSPEND_INFO suspendInfo;
@@ -351,7 +351,7 @@ void startInjectionProcess(
         if (injectDll)
         {
             remoteImageBase = MapModuleToProcess(hProcess, dllMemory, true);
-            if (remoteImageBase)
+            if (remoteImageBase != nullptr)
             {
                 FillHookDllData(hProcess, hdd);
 
@@ -657,7 +657,7 @@ BYTE *ReadFileToMemory(const WCHAR *targetFilePath)
     HANDLE hFile;
     DWORD dwBytesRead;
     DWORD FileSize;
-    BYTE* FilePtr = 0;
+    BYTE *FilePtr = nullptr;
 
     hFile = CreateFileW(
         targetFilePath,
@@ -667,23 +667,23 @@ BYTE *ReadFileToMemory(const WCHAR *targetFilePath)
         OPEN_EXISTING,
         0,
         0);
-    if (hFile != INVALID_HANDLE_VALUE)
+    if (hFile == INVALID_HANDLE_VALUE)
+        return nullptr;
+
+    FileSize = GetFileSize(hFile, NULL);
+    if (FileSize > 0)
     {
-        FileSize = GetFileSize(hFile, NULL);
-        if (FileSize > 0)
+        FilePtr = (BYTE *)calloc(FileSize + 1, 1);
+        if (FilePtr != nullptr)
         {
-            FilePtr = (BYTE*)calloc(FileSize + 1, 1);
-            if (FilePtr != nullptr)
+            if (!ReadFile(hFile, (LPVOID)FilePtr, FileSize, &dwBytesRead, NULL))
             {
-                if (!ReadFile(hFile, (LPVOID)FilePtr, FileSize, &dwBytesRead, NULL))
-                {
-                    free(FilePtr);
-                    FilePtr = 0;
-                }
+                free(FilePtr);
+                FilePtr = nullptr;
             }
         }
-        CloseHandle(hFile);
     }
+    CloseHandle(hFile);
 
     return FilePtr;
 }
@@ -762,18 +762,6 @@ bool RemoveDebugPrivileges(HANDLE hProcess)
     #define NtContinue_FUNC_SIZE            0x18
 #endif
 
-struct PATCH_FUNC
-{
-    PCHAR funcName;
-    PVOID funcAddr;
-    SIZE_T funcSize;
-} static patchFunctions[] =
-{
-    { "DbgBreakPoint",      0, DbgBreakPoint_FUNC_SIZE },
-    { "DbgUiRemoteBreakin", 0, DbgUiRemoteBreakin_FUNC_SIZE },
-    { "NtContinue",         0, NtContinue_FUNC_SIZE }
-};
-
 //----------------------------------------------------------------------------------
 bool ApplyAntiAntiAttach(DWORD targetPid)
 {
@@ -788,26 +776,36 @@ bool ApplyAntiAntiAttach(DWORD targetPid)
 
     HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
 
-    for (ULONG i = 0; i < _countof(patchFunctions); i++)
-        patchFunctions[i].funcAddr = (PVOID)GetProcAddress(hMod, patchFunctions[i].funcName);
-
-    for (ULONG i = 0; i < _countof(patchFunctions); i++)
+    struct PATCH_FUNC
     {
-        ULONG oldProtection;
-        if (    VirtualProtectEx(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, PAGE_EXECUTE_READWRITE, &oldProtection)
-             && WriteProcessMemory(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, nullptr))
-        {
-            VirtualProtectEx(hProcess, patchFunctions[i].funcAddr, patchFunctions[i].funcSize, oldProtection, &oldProtection);
-            result = true;
-        }
-        else
-        {
-            result = false;
+        PCHAR funcName;
+        SIZE_T funcSize;
+    } static const patchFunctions[] =
+    {
+        { "DbgBreakPoint",      DbgBreakPoint_FUNC_SIZE },
+        { "DbgUiRemoteBreakin", DbgUiRemoteBreakin_FUNC_SIZE },
+        { "NtContinue",         NtContinue_FUNC_SIZE }
+    };
+
+    ULONG i;
+    for (i = 0; i < _countof(patchFunctions); ++i)
+    {
+        auto funcAddr = (PVOID)GetProcAddress(hMod, patchFunctions[i].funcName);
+        if (funcAddr == nullptr)
             break;
-        }
+
+        ULONG oldProtection;
+        if (!VirtualProtectEx(hProcess, funcAddr, patchFunctions[i].funcSize, PAGE_EXECUTE_READWRITE, &oldProtection))
+            break;
+
+        bool ok = WriteProcessMemory(hProcess, funcAddr, funcAddr, patchFunctions[i].funcSize, nullptr) != FALSE;
+
+        VirtualProtectEx(hProcess, funcAddr, patchFunctions[i].funcSize, oldProtection, &oldProtection);
+        if (!ok)
+            break;
     }
 
     CloseHandle(hProcess);
 
-    return result;
+    return i == _countof(patchFunctions);
 }

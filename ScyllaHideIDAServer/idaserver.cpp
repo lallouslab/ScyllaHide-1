@@ -182,6 +182,7 @@ static void MapSettings()
     g_settings.opts().fixPebNtGlobalFlag            = idaExchange.EnablePebNtGlobalFlag;
     g_settings.opts().fixPebStartupInfo             = idaExchange.EnablePebStartupInfo;
 
+    g_settings.opts().killAntiAttach                = idaExchange.KillAntiAttach;
     g_settings.opts().malwareRunpeUnpacker          = idaExchange.EnableMalwareRunPeUnpacker;
 }
 
@@ -218,11 +219,11 @@ static void handleClient(SOCKET ClientSocket)
 {
     int iResult;
     bool once = false;
-    auto ProcessId = idaExchange.ProcessId;
-
+    DWORD ProcessId;
     do
     {
         iResult = recv(ClientSocket, (char*)&idaExchange, sizeof(IDA_SERVER_EXCHANGE), 0);
+        ProcessId = idaExchange.ProcessId;
 
         if (iResult == sizeof(IDA_SERVER_EXCHANGE))
         {
@@ -231,14 +232,19 @@ static void handleClient(SOCKET ClientSocket)
             switch (idaExchange.notif_code)
             {
                 case dbg_process_attach:
-                    break;
-
                 case dbg_process_start:
                 {
                     bHooked = false;
                     ZeroMemory(&g_hdd, sizeof(HOOK_DLL_DATA));
 
                     ReadNtApiInformation(&g_hdd);
+
+                    // Attach?
+                    if (idaExchange.notif_code == dbg_process_attach && g_settings.opts().killAntiAttach)
+                    {
+                        if (!ApplyAntiAntiAttach(ProcessId))
+                            wprintf(L"Anti-Anti-Attach failed\n");
+                    }
 
                     if (!once)
                     {
@@ -254,12 +260,14 @@ static void handleClient(SOCKET ClientSocket)
 
                     break;
                 }
+
                 case dbg_process_exit:
                 {
 
                     iResult = -1; // Terminate loop
                     break;
                 }
+
                 case dbg_library_load:
                 {
                     if (bHooked)
