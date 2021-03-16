@@ -20,9 +20,12 @@
     #pragma pack(pop)
     #include "..\ScyllaHideOlly2Plugin\resource.h"
 #elif defined(__IDP__)
+    #pragma warning(push)
+    #pragma warning(disable: 4244 4267)
     #include <ida.hpp>
     #include <idp.hpp>
     #include <dbg.hpp>
+    #pragma warning(pop)
     #include "..\ScyllaHideIDAProPlugin\IdaServerClient.h"
     #include "..\PluginGeneric\AttachDialog.h"
     #include "..\ScyllaHideIDAProPlugin\resource.h"
@@ -574,7 +577,7 @@ HWND CreateTooltips(HWND hDlg)
 }
 
 //----------------------------------------------------------------------------------
-// Options dialog proc
+// Options dialog procedure
 INT_PTR CALLBACK OptionsDlgProc(
     HWND hDlg,
     UINT message,
@@ -605,6 +608,9 @@ INT_PTR CALLBACK OptionsDlgProc(
 
             CreateTooltips(hDlg);
 
+#ifdef __IDP__
+            EnableWindow(GetDlgItem(hDlg, IDC_ATTACH), FALSE);
+#endif
             break;
         }
         case WM_CLOSE:

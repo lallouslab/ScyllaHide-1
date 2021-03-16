@@ -1,6 +1,3 @@
-#define USE_STANDARD_FILE_FUNCTIONS
-#pragma warning(disable : 4996 4512 4127 4201)
-
 #ifdef __EA64__
     #pragma comment(lib, "x64_win_vc_64/ida.lib")
 #else
@@ -8,15 +5,6 @@
 #endif
 
 #include <Windows.h>
-
-#pragma warning(push)
-#pragma warning(disable: 4267 4244)
-#include <ida.hpp>
-#include <idp.hpp>
-#include <dbg.hpp>
-#include <loader.hpp>
-#include <kernwin.hpp>
-#pragma warning(pop)
 
 #include <Scylla/Logger.h>
 #include <Scylla/Settings.h>
@@ -28,6 +16,15 @@
 #include "..\PluginGeneric\OptionsDialog.h"
 #include "IdaServerClient.h"
 #include "resource.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4267 4244 4305 4309)
+#include <ida.hpp>
+#include <idp.hpp>
+#include <dbg.hpp>
+#include <loader.hpp>
+#include <kernwin.hpp>
+#pragma warning(pop)
 
 typedef void (__cdecl * t_AttachProcess)(DWORD dwPID);
 
@@ -373,7 +370,7 @@ idaman ida_module_data plugin_t PLUGIN =
 };
 
 //----------------------------------------------------------------------------------
-static BOOL WINAPI DllMain(
+BOOL WINAPI DllMain(
     HINSTANCE hInstDll,
     DWORD dwReason,
     LPVOID lpReserved)

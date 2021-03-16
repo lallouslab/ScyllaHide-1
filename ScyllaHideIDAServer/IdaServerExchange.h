@@ -1,6 +1,9 @@
 #pragma once
 
+#pragma warning(push)
+#pragma warning(disable: 4244 4267)
 #include <dbg.hpp>
+#pragma warning(pop)
 
 #define IDA_SERVER_DEFAULT_PORT_TEXT "1337"
 #define IDA_SERVER_DEFAULT_PORT 1337
@@ -39,7 +42,7 @@ typedef struct _IDA_SERVER_EXCHANGE
 	unsigned char EnablePreventThreadCreation;
 	unsigned char EnableNtCreateThreadExHook;
 
-	// Protect and Hide Hardware Breakpoints
+	// Protect and Hide hardware breakpoints
 	unsigned char EnableNtGetContextThreadHook;
 	unsigned char EnableNtSetContextThreadHook;
 	unsigned char EnableNtContinueHook;

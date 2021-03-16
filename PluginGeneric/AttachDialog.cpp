@@ -20,7 +20,7 @@
 #define BULLSEYE_CENTER_X_OFFSET		15
 #define BULLSEYE_CENTER_Y_OFFSET		18
 
-typedef void (__cdecl * t_AttachProcess)(DWORD dwPID);
+typedef void (__cdecl *t_AttachProcess)(DWORD dwPID);
 
 t_AttachProcess _AttachProcess = 0;
 
@@ -172,7 +172,7 @@ INT_PTR CALLBACK AttachProc(
                     {
                         EndDialog(hWnd, NULL);
 
-                        if (_AttachProcess != 0)
+                        if (_AttachProcess != nullptr)
                             _AttachProcess(pid);
                         else
                             MessageBoxW(0, L"Developer!!! You forgot something _AttachProcess!!!!!", L"ERROR", 0);
